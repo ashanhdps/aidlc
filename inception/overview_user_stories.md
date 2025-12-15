@@ -103,11 +103,14 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - **So that** I can track my progress and identify areas for improvement
 
 **Acceptance Criteria:**
-- I can see live progress bars for each assigned KPI
-- Dashboard shows traffic-light coloring (red/yellow/green)
-- I can view trend charts showing performance over time
-- Dashboard updates automatically with new data
-- I can filter by time periods (daily/weekly/monthly/quarterly)
+- I can see live progress bars showing current achievement percentage for each assigned KPI
+- Dashboard displays traffic-light status indicators (red: below target, yellow: approaching target, green: meeting/exceeding target)
+- I can view trend charts with line graphs showing performance trajectory over selected time periods
+- Dashboard automatically refreshes when new data is available without requiring page reload
+- I can filter dashboard view by time periods (daily/weekly/monthly/quarterly/yearly)
+- I can see my current performance compared to target for each KPI at a glance
+- Dashboard loads within 3 seconds and displays a loading indicator during data refresh
+- I can customize dashboard layout by reordering KPI widgets
 
 **US-008: Access KPI Details**
 - **As an** Employee
@@ -115,41 +118,83 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - **So that** I can understand my performance patterns and trends
 
 **Acceptance Criteria:**
-- I can click on any KPI to view detailed information
-- I can see historical performance data and trends
-- I can view data sources and calculation methods
-- I can export KPI data for personal analysis
-- I can set personal alerts for KPI thresholds
+- I can click on any KPI widget to open a detailed view modal or page
+- Detailed view shows historical performance data with date ranges and actual vs. target values
+- I can see the data source(s) feeding each KPI and the calculation formula used
+- I can view performance breakdown by sub-periods (e.g., weekly breakdown within a monthly view)
+- I can export KPI data in multiple formats (CSV, Excel, PDF) for personal analysis
+- I can set custom alert thresholds that trigger email/in-app notifications when performance crosses defined levels
+- I can add personal notes or comments to specific data points for context
+- Detailed view includes statistical insights (average, median, best/worst performance periods)
+
+**US-009: AI-Driven Performance Insights**
+- **As an** Employee
+- **I want to** receive AI-driven suggestions and insights to improve my KPI performance
+- **So that** I can take proactive actions to meet or exceed my targets
+
+**Acceptance Criteria:**
+- AI analyzes my performance trends and identifies patterns (e.g., performance dips on specific days/weeks)
+- I receive personalized improvement suggestions based on my underperforming KPIs
+- AI recommends specific actions or best practices from high performers with similar roles
+- System predicts my end-of-period performance based on current trajectory
+- I can see "what-if" scenarios showing required performance levels to meet targets
+- AI highlights correlations between different KPIs (e.g., "improving X typically improves Y")
+- Suggestions are prioritized by potential impact on overall performance score
+- I can provide feedback on suggestion usefulness to improve AI recommendations
+- AI identifies my peak performance periods and suggests optimal work patterns
 
 ### 2.2 Manager Dashboard
 
-**US-009: Monitor Team Performance**
+**US-010: Monitor Team Performance**
 - **As a** Supervisor
 - **I want to** view real-time KPI performance for all my direct reports
 - **So that** I can identify team members who need support or recognition
 
 **Acceptance Criteria:**
-- I can see aggregated team performance metrics
-- I can view individual employee KPI status
-- Dashboard highlights employees needing attention
-- I can compare performance across team members
-- I can access coaching recommendations for underperformers
+- I can see aggregated team performance metrics with overall team achievement percentage
+- I can view individual employee KPI status in a sortable, filterable table or card view
+- Dashboard automatically highlights employees needing attention (red/yellow status indicators)
+- I can compare performance across team members using side-by-side comparisons or rankings
+- I can access AI-generated coaching recommendations for underperformers with specific action items
+- Dashboard shows team performance trends over time with historical comparisons
+- I can filter by KPI type, performance level, or time period
+- I can quickly identify top performers for recognition opportunities
+- System alerts me to significant performance changes (improvements or declines)
 
-**US-010: Executive Performance Overview**
+**US-011: AI-Powered Team Insights**
+- **As a** Supervisor
+- **I want to** receive AI-driven insights about team performance and optimization opportunities
+- **So that** I can make informed decisions to improve team outcomes
+
+**Acceptance Criteria:**
+- AI identifies team-wide performance patterns and trends
+- System suggests optimal resource allocation based on individual strengths and KPI performance
+- AI recommends which team members could mentor others based on performance data
+- I receive alerts for potential burnout risks based on performance volatility or declining trends
+- AI suggests team restructuring or workload rebalancing opportunities
+- System identifies skills gaps by analyzing KPI performance across the team
+- AI predicts team performance for upcoming periods based on current trends
+- I can see benchmarking data comparing my team to similar teams in the organization
+- AI recommends timing for performance conversations based on employee performance patterns
+
+**US-012: Executive Performance Overview**
 - **As an** Executive Manager
 - **I want to** view high-level performance statistics across departments
 - **So that** I can make informed strategic decisions
 
 **Acceptance Criteria:**
-- I can see company-wide KPI achievement rates
-- I can view department-level performance comparisons
-- Dashboard shows trends and performance indicators
-- I can drill down from company to department to individual level
-- I can generate executive summary reports
+- I can see company-wide KPI achievement rates with year-over-year comparisons
+- I can view department-level performance comparisons in visual formats (charts, heatmaps)
+- Dashboard shows trends and leading/lagging performance indicators
+- I can drill down from company to department to team to individual level
+- I can generate executive summary reports with key insights and recommendations
+- Dashboard highlights departments or areas requiring executive attention
+- I can view strategic KPI alignment across the organization
+- System provides predictive analytics for organizational performance forecasting
 
 ### 2.3 Data Integration
 
-**US-011: Automatic Data Integration**
+**US-013: Automatic Data Integration**
 - **As a** System Administrator
 - **I want to** configure automatic data pulls from various business systems
 - **So that** KPI tracking is automated and accurate
@@ -160,6 +205,10 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Data synchronization occurs in real-time or scheduled intervals
 - I can map data fields to specific KPIs
 - Integration errors are logged and reported
+- I can test integrations before activating them
+- System validates data quality and flags anomalies
+- I can set up data transformation rules for incoming data
+- Integration status dashboard shows connection health and last sync times
 
 ---
 
@@ -167,7 +216,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 3.1 Review Configuration
 
-**US-012: Configure Review Templates**
+**US-014: Configure Review Templates**
 - **As an** HR Personnel
 - **I want to** create configurable performance review templates
 - **So that** reviews are consistent and aligned with organizational standards
@@ -179,33 +228,36 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can define rating scales and criteria
 - Templates can be assigned to specific roles or departments
 
-**US-013: Structure KPI-Based Reviews**
+**US-015: Structure KPI-Based Reviews**
 - **As an** HR Personnel
 - **I want to** build reviews around KPI achievement percentages and competencies
 - **So that** performance evaluations are objective and comprehensive
-
+ 
 **Acceptance Criteria:**
 - Reviews automatically pull KPI achievement data
 - I can configure KPI vs. competency weighting (e.g., 70%/30%)
 - System calculates overall performance scores
 - I can include qualitative assessment sections
 - Review templates support multiple evaluation criteria
+- Review process is initiated after Supervisor and Employee have finalized their scoring of employee's KPI
 
 ### 3.2 Review Process
 
-**US-014: Conduct Self-Assessment**
+**US-016: Conduct Self-Assessment**
 - **As an** Employee
 - **I want to** complete self-assessments as part of my performance review
 - **So that** I can provide my perspective on my performance and development
-
+ 
 **Acceptance Criteria:**
 - I can access my review form during review periods
 - I can rate my own KPI performance with comments
 - I can assess my competencies and behaviors
 - I can set goals and development objectives
 - I can save drafts and submit when complete
+- I can indicate extra mile efforts that I've achieved
+- I can upload proof of performance to back up my KPI self-assessments
 
-**US-015: Manager Performance Scoring**
+**US-017: Manager Performance Scoring**
 - **As a** Supervisor
 - **I want to** score my direct reports' performance and compare with self-assessments
 - **So that** I can provide fair and comprehensive performance evaluations
@@ -217,7 +269,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can add detailed comments and feedback
 - I can recommend salary adjustments or promotions
 
-**US-016: Review Calibration Tools**
+**US-018: Review Calibration Tools**
 - **As a** Supervisor
 - **I want to** use calibration tools to ensure consistent rating standards
 - **So that** performance evaluations are fair across the organization
@@ -235,7 +287,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 4.1 Real-Time Feedback
 
-**US-017: Provide KPI-Specific Feedback**
+**US-019: Provide KPI-Specific Feedback**
 - **As a** Supervisor
 - **I want to** provide real-time feedback tied to specific KPI performance and suggest training material for improvement of KPI
 - **So that** employees receive timely recognition and coaching
@@ -247,7 +299,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Feedback is immediately visible to the employee
 - I can schedule follow-up conversations
 
-**US-018: Receive Performance Feedback**
+**US-020: Receive Performance Feedback**
 - **As an** Employee
 - **I want to** receive timely feedback on my KPI performance
 - **So that** I can adjust my approach and improve continuously
@@ -261,7 +313,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 4.2 Peer Recognition
 
-**US-019: Peer Recognition System**
+**US-021: Peer Recognition System**
 - **As an** Employee
 - **I want to** recognize colleagues for their contributions and KPI achievements
 - **So that** we can build a culture of appreciation and collaboration
@@ -273,7 +325,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Recognition is visible to relevant team members
 - System tracks recognition patterns and frequency
 
-**US-020: Slack/Teams Integration**
+**US-022: Slack/Teams Integration**
 - **As an** Employee
 - **I want to** give and receive recognition through Slack/Teams bots
 - **So that** feedback and recognition fit naturally into our workflow
@@ -291,7 +343,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 5.1 Coaching Question Management
 
-**US-021: Create KPI Coaching Questions**
+**US-023: Create KPI Coaching Questions**
 - **As a** Supervisor
 - **I want to** create and manage coaching questions for each KPI
 - **So that** I can provide structured guidance to my team members
@@ -303,7 +355,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - System provides question templates and examples
 - I can share questions with other managers
 
-**US-022: AI-Generated Coaching Questions**
+**US-024: AI-Generated Coaching Questions**
 - **As a** Supervisor
 - **I want to** receive AI-generated coaching questions based on KPI descriptions
 - **So that** I can quickly access relevant coaching guidance
@@ -317,7 +369,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 5.2 Coaching Database
 
-**US-023: Access Coaching Database**
+**US-025: Access Coaching Database**
 - **As a** Supervisor
 - **I want to** access a comprehensive database of coaching resources
 - **So that** I can effectively support employee development
@@ -329,7 +381,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can contribute to and rate coaching resources
 - Database is regularly updated with new content
 
-**US-024: Coaching Session Tracking**
+**US-026: Coaching Session Tracking**
 - **As a** Supervisor
 - **I want to** track coaching sessions and their outcomes
 - **So that** I can monitor employee development progress
@@ -347,21 +399,30 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 6.1 System Configuration
 
-**US-025: System Administration**
+**US-027: System Administration**
 - **As a** System Administrator
-- **I want to** configure system settings and user permissions
-- **So that** the platform operates securely and efficiently
+- **I want to** manage users, system settings, and external integrations
+- **So that** the platform operates securely, efficiently, and integrates with our business systems
 
 **Acceptance Criteria:**
-- I can manage user roles and permissions
-- I can configure system integrations and data sources
-- I can set up automated notifications and alerts
-- I can manage system backup and security settings
-- I can monitor system performance and usage
+- I can create, edit, and delete user accounts
+- I can assign and modify user roles (Employee, Supervisor, HR, Executive, Admin)
+- I can configure role-based permissions and access levels
+- I can activate, deactivate, or suspend user accounts
+- I can bulk import/export user data
+- I can view user activity logs and access history
+- Changes to user accounts are tracked with audit trails
+- I can configure system integrations (Salesforce, Zendesk, SAP, Google Sheets, Power BI, APIs)
+- I can manage API credentials and authentication settings
+- I can set up automated notifications and alert rules
+- I can configure data synchronization schedules
+- I can manage system backup and disaster recovery settings
+- I can monitor system performance, uptime, and usage metrics
+- I can configure security policies and compliance settings
 
 ### 6.2 Analytics and Reporting
 
-**US-026: Generate Performance Reports**
+**US-028: Generate Performance Reports**
 - **As an** Executive Manager
 - **I want to** generate comprehensive performance analytics and reports
 - **So that** I can make data-driven organizational decisions
@@ -370,10 +431,12 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can create custom reports with various metrics and filters
 - Reports include trend analysis and predictive insights
 - I can schedule automated report generation and distribution
-- Reports can be exported in multiple formats (PDF, Excel, etc.)
-- I can create executive dashboards with key performance indicators
+- Reports can be exported in multiple formats (PDF, Excel, CSV, PowerPoint)
+- I can create and customize executive dashboards with key performance indicators
+- I can share reports with specific stakeholders
+- I can save report templates for reuse
 
-**US-027: HR Analytics Dashboard**
+**US-029: HR Analytics Dashboard**
 - **As an** HR Personnel
 - **I want to** access HR-specific analytics and insights
 - **So that** I can optimize performance management processes
@@ -388,9 +451,9 @@ A digital platform that helps organizations set, track, and evaluate employee go
 ---
 
 ## Summary
-This document contains 27 comprehensive user stories covering all major features of the Employee Performance System:
+This document contains 29 comprehensive user stories covering all major features of the Employee Performance System:
 - 6 stories for KPI Definition & Assignment
-- 5 stories for Real-Time KPI Dashboard  
+- 7 stories for Real-Time KPI Dashboard  
 - 5 stories for Performance Reviews
 - 4 stories for Continuous Feedback & Recognition
 - 4 stories for KPI Guide Questions & Coaching Database
