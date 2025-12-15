@@ -299,3 +299,89 @@ Based on feedback, the architecture was revised to include a dedicated Frontend 
 
 ---
 **Status**: ✅ ARCHITECTURE REVISION COMPLETED - 4 units with dedicated frontend, ready for development teams
+
+
+---
+
+## Domain Model Design Plan - Unit 2: Performance Management Service
+
+### Phase 1: Domain Analysis & Understanding
+- [x] Analyze all user stories (US-014 through US-026) to identify core domain concepts
+- [x] Map business processes and workflows (review lifecycle, feedback flow, coaching flow)
+- [x] Identify domain invariants and business rules
+- [x] Define bounded context boundaries and integration points with other units
+
+### Phase 2: Aggregate Identification
+- [x] Identify aggregate roots based on transactional consistency boundaries
+- [x] Define aggregate boundaries for Review Management domain
+- [x] Define aggregate boundaries for Feedback & Recognition domain
+- [x] Define aggregate boundaries for Coaching & Development domain
+- [x] Document lifecycle and state transitions for each aggregate
+
+### Phase 3: Entity & Value Object Design
+- [x] Design entities within each aggregate (with identity and lifecycle)
+- [x] Design value objects for immutable concepts (ratings, scores, dates, etc.)
+- [x] Define entity relationships and navigation patterns
+- [x] Ensure proper encapsulation and invariant protection
+
+### Phase 4: Domain Events Design
+- [x] Identify significant business events that other parts of the system care about
+- [x] Design domain events for review lifecycle (created, submitted, completed, calibrated)
+- [x] Design domain events for feedback and recognition activities
+- [x] Design domain events for coaching sessions and resource usage
+- [x] Define event payload structures and metadata
+
+### Phase 5: Domain Services & Policies
+- [x] Identify operations that don't naturally belong to a single entity
+- [x] Design domain services for complex calculations (scoring algorithms, calibration logic)
+- [x] Define business policies (review validation rules, feedback constraints, recognition limits)
+- [x] Document service contracts and responsibilities
+
+### Phase 6: Repository Interfaces
+- [x] Define repository interfaces for each aggregate root
+- [x] Specify query methods needed for business operations
+- [x] Define persistence requirements and data access patterns
+- [x] Document repository contracts (no implementation details)
+
+### Phase 7: Integration Points & Anti-Corruption Layer
+- [x] Define integration contracts with KPI Management Service (consume KPI data)
+- [x] Define integration contracts with Data & Analytics Service (provide performance insights)
+- [x] Design anti-corruption layer for external integrations (Slack/Teams)
+- [x] Document data transformation and mapping requirements
+
+### Phase 8: Documentation & Validation
+- [x] Create comprehensive domain model documentation in `/construction/unit2_performance_management/domain_model.md`
+- [x] Include UML-style diagrams (textual representation) for aggregates and relationships
+- [x] Document all tactical DDD patterns used
+- [x] Add examples and scenarios for clarity
+- [x] Review completeness against all user stories
+
+### Notes & Clarifications Needed:
+- **Calibration Process**: Need clarification on whether calibration sessions should be part of the Review aggregate or a separate aggregate. This affects transactional boundaries. (Awaiting your input)
+- **Recognition Anonymity**: US-021 mentions anonymous recognition but also "same team limitations" - need clarification on how to enforce team boundaries for anonymous recognition. (Awaiting your input)
+- **AI-Generated Content**: For US-024 (AI-generated coaching questions), should the AI service be modeled as a domain service or external integration? (Awaiting your input)
+- **Slack/Teams Integration**: Should bot interactions be modeled within the domain or kept purely as infrastructure concerns? (Awaiting your input)
+
+---
+
+
+### Design Decisions Made:
+- **Calibration Process**: ✅ Modeled as part of ReviewCycle aggregate for transactional consistency
+- **Recognition Anonymity**: ✅ Giver ID stored internally for limit enforcement while maintaining external anonymity
+- **AI-Generated Content**: ✅ Modeled as external integration via Anti-Corruption Layer
+- **Slack/Teams Integration**: ✅ Handled through ACL adapters to protect domain model
+
+### Deliverables:
+✅ `/construction/unit2_performance_management/domain_model.md` (2,471 lines - Full version with all 13 user stories)
+✅ `/construction/unit2_performance_management/domain_model_workshop.md` (Compressed 1-day workshop version)
+✅ `/construction/unit2_performance_management/verification_report.md` (Comprehensive validation)
+
+### Workshop Version Scope (1-Day Implementation):
+**User Stories:** 4 essential stories (US-016, US-017, US-019, US-020)
+**Aggregates:** 2 (ReviewCycle, FeedbackRecord)
+**Duration:** 8 hours (1 day)
+**Focus:** Core review and feedback features only
+**Excluded:** Templates, calibration, recognition, coaching (can be added incrementally)
+
+---
+**Status**: ✅ DOMAIN MODEL DESIGN COMPLETED - Both full and workshop versions ready
