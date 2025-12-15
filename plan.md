@@ -299,3 +299,177 @@ Based on feedback, the architecture was revised to include a dedicated Frontend 
 
 ---
 **Status**: ✅ ARCHITECTURE REVISION COMPLETED - 4 units with dedicated frontend, ready for development teams
+---
+
+
+# Phase 7: Domain Model Design for Unit 1 - KPI Management
+
+## Overview
+This phase focuses on creating a comprehensive Domain Driven Design (DDD) domain model for Unit 1: KPI Management Service, including all tactical DDD components such as aggregates, entities, value objects, domain events, policies, repositories, and domain services.
+
+## Business Requirements Clarified
+- **Approval Hierarchy**: Supervisor (MAKER) → HR (APPROVER) → Admin (VIEW)
+- **KPI Weight Validation**: Flexible, configurable (not strict 100% requirement)
+- **AI Learning**: Track approval/rejection patterns only
+- **Cascading Rules**: Include cascading business rules in the model
+- **External Data Sources**: Include external factor considerations
+
+## Plan Steps
+
+### Phase 7.1: Analysis and Preparation
+- [x] **Step 7.1: Analyze User Stories and Identify Core Business Concepts**
+  - Extract key business concepts from the 6 user stories
+  - Identify business rules and invariants
+  - Map business processes and workflows
+  - Status: ✅ Completed
+
+- [x] **Step 7.2: Identify Domain Language and Ubiquitous Language Terms**
+  - Create glossary of domain-specific terms
+  - Ensure consistent terminology across the domain
+  - Status: ✅ Completed
+
+- [x] **Step 7.3: Create Construction Folder Structure**
+  - Create `/construction/` folder in root directory
+  - Create `/construction/unit1_kpi_management/` subfolder
+  - Set up file structure for domain model documentation
+  - Status: ✅ Completed
+
+### Phase 7.2: Core Domain Modeling
+- [x] **Step 7.4: Identify and Design Aggregates**
+  - Identify aggregate roots based on business invariants
+  - Define aggregate boundaries and consistency rules
+  - Map relationships between aggregates
+  - Status: ✅ Completed - 5 core aggregates defined
+
+- [x] **Step 7.5: Design Entities within each Aggregate**
+  - Define entity identity and lifecycle
+  - Specify entity attributes and behaviors
+  - Establish entity relationships within aggregates
+  - Status: ✅ Completed - 15+ entities designed
+
+- [x] **Step 7.6: Design Value Objects**
+  - Identify immutable concepts that can be value objects
+  - Define value object attributes and validation rules
+  - Ensure value objects are side-effect free
+  - Status: ✅ Completed - 20+ value objects defined
+
+- [x] **Step 7.7: Define Domain Events**
+  - Identify significant business events that occur in the domain
+  - Design event structure and payload
+  - Map events to business processes and user stories
+  - Status: ✅ Completed - 25+ domain events defined
+
+### Phase 7.3: Domain Services and Policies
+- [x] **Step 7.8: Design Domain Services**
+  - Identify operations that don't naturally belong to entities or value objects
+  - Define stateless domain services for complex business logic
+  - Specify service interfaces and contracts
+  - Status: ✅ Completed - 10+ domain services designed
+
+- [x] **Step 7.9: Define Domain Policies**
+  - Identify business rules and policies
+  - Design policy implementations for complex business logic
+  - Map policies to user story acceptance criteria
+  - Status: ✅ Completed - Multiple domain policies defined
+
+- [x] **Step 7.10: Design Repository Interfaces**
+  - Define repository contracts for aggregate persistence
+  - Specify query methods based on business needs
+  - Ensure repositories maintain aggregate boundaries
+  - Status: ✅ Completed - Repository interfaces for all aggregates
+
+### Phase 7.4: Advanced Domain Concepts
+- [x] **Step 7.11: Design Factories**
+  - Identify complex object creation scenarios
+  - Design factory methods for aggregate creation
+  - Handle complex initialization logic
+  - Status: ✅ Completed - Factories for complex object creation
+
+- [x] **Step 7.12: Define Domain Specifications**
+  - Create specifications for complex business rules
+  - Design reusable query specifications
+  - Implement composite specifications where needed
+  - Status: ✅ Completed - Domain specifications defined
+
+- [x] **Step 7.13: Model Domain Exceptions**
+  - Identify domain-specific error conditions
+  - Design meaningful exception hierarchy
+  - Map exceptions to business rule violations
+  - Status: ✅ Completed - Domain exception hierarchy defined
+
+### Phase 7.5: Integration and Validation
+- [x] **Step 7.14: Define Integration Events**
+  - Design events for communication with other bounded contexts
+  - Specify event contracts and schemas
+  - Map integration points from unit requirements
+  - Status: ✅ Completed - Integration events defined
+
+- [x] **Step 7.15: Validate Domain Model Against User Stories**
+  - Ensure all user story acceptance criteria are supported
+  - Verify business rules are properly modeled
+  - Check that all business processes are covered
+  - Status: ✅ Completed - All 6 user stories validated
+
+- [x] **Step 7.16: Review and Refine Domain Model**
+  - Conduct domain model review for consistency
+  - Refine aggregate boundaries if needed
+  - Ensure proper separation of concerns
+  - Status: ✅ Completed - Domain model reviewed and refined
+
+### Phase 7.6: Documentation
+- [x] **Step 7.17: Create Comprehensive Domain Model Documentation**
+  - Document all aggregates, entities, and value objects
+  - Include domain events and their triggers
+  - Document domain services and policies
+  - Create domain model diagrams and relationships
+  - Status: ✅ Completed
+
+- [x] **Step 7.18: Document Business Rules and Invariants**
+  - List all business rules with their enforcement points
+  - Document aggregate invariants and consistency rules
+  - Include validation rules and constraints
+  - Status: ✅ Completed
+
+- [x] **Step 7.19: Create Integration Specifications**
+  - Document external dependencies and integration points
+  - Specify event contracts for other bounded contexts
+  - Include repository and external service contracts
+  - Status: ✅ Completed
+
+## Domain Model Components Created
+
+### Core Aggregates (5):
+1. **KPI Definition Aggregate** - Manages KPI templates and metadata
+2. **Employee KPI Portfolio Aggregate** - Manages all KPI assignments for employees
+3. **KPI Hierarchy Aggregate** - Manages organizational KPI alignment and cascading
+4. **AI Suggestion Aggregate** - Manages AI-generated recommendations and learning
+5. **Approval Workflow Aggregate** - Manages maker-checker approval processes
+
+### Key Features Implemented:
+- ✅ Flexible KPI weight validation (configurable rules)
+- ✅ Maker-checker approval workflow with proper authority hierarchy
+- ✅ AI learning system with approval/rejection tracking
+- ✅ Hierarchical KPI cascading with business rules
+- ✅ External data source integration considerations
+- ✅ Complete event-driven architecture support
+
+## Deliverables:
+- `/construction/unit1_kpi_management/domain_model.md` - Complete DDD domain model
+- 5 Core Aggregates with proper boundaries and invariants
+- 15+ Entities with behaviors and relationships
+- 20+ Value Objects with validation rules
+- 25+ Domain Events for integration and workflows
+- 10+ Domain Services for complex business logic
+- Domain Policies, Repository Interfaces, Factories, Specifications
+- Complete validation against all 6 user stories
+
+## Next Available Steps:
+- [ ] Create Logical Design for Software Implementation
+- [ ] Design API contracts and service interfaces
+- [ ] Create database schema design
+- [ ] Define integration patterns with other units
+
+---
+**Status**: ✅ DOMAIN MODEL PHASE COMPLETED - Ready for logical design phase
+**Date Completed**: December 15, 2025
+**Validation**: All 6 user stories covered with appropriate domain components
