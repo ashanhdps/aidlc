@@ -83,6 +83,8 @@ The KPI Management unit is responsible for the complete lifecycle of Key Perform
 - Approved KPIs are automatically implemented
 - Rejection reasons are captured for AI learning
 
+
+
 ## Key Data Entities
 - **KPI Definition**: ID, name, description, target, weight, frequency, data source, created by, created date
 - **KPI Assignment**: Employee ID, KPI ID, custom target, effective date, assigned by, status

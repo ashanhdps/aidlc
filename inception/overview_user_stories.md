@@ -91,6 +91,8 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Approved KPIs are automatically implemented
 - Rejection reasons are captured for AI learning
 
+
+
 ---
 
 ## 2. Real-Time KPI Dashboard
@@ -448,12 +450,42 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can identify high performers and development opportunities
 - Analytics support workforce planning and talent management
 
+**US-030: Employee Onboarding Management**
+- **As an** HR Personnel
+- **I want to** manage employee onboarding with automated KPI assignment
+- **So that** new employees have clear performance expectations from day one
+
+**Acceptance Criteria:**
+- I can create and manage employee accounts during onboarding
+- System automatically suggests role-appropriate KPIs based on job title and department
+- I can review and customize KPI assignments during onboarding workflow
+- KPI assignments are effective from the employee's start date
+- Onboarding checklist includes KPI assignment completion
+- New employee and manager receive notifications of assigned KPIs with explanations
+- Onboarding status tracking shows completion progress
+
+**US-031: Maker-Checker Approval Workflow**
+- **As a** System Administrator
+- **I want to** implement maker-checker approval processes for critical system changes
+- **So that** important modifications are reviewed and approved before implementation
+
+**Acceptance Criteria:**
+- System identifies critical changes requiring approval (KPI changes >10% weight, >20% target, senior role assignments, user role changes)
+- Maker can submit change requests with justification and supporting documentation
+- Checker receives notifications for pending approvals with change impact analysis
+- Checker can approve, reject, or request modifications with detailed comments
+- All approval decisions are logged with timestamps, reasons, and audit trail
+- Affected users are notified only after final approval
+- Emergency override capability exists for urgent changes with additional authorization
+- Approval workflows can be configured by change type and organizational hierarchy
+
 ---
 
 ## Summary
-This document contains 29 comprehensive user stories covering all major features of the Employee Performance System:
+This document contains 31 comprehensive user stories covering all major features of the Employee Performance System:
 - 6 stories for KPI Definition & Assignment
 - 7 stories for Real-Time KPI Dashboard  
 - 5 stories for Performance Reviews
 - 4 stories for Continuous Feedback & Recognition
-- 4 stories for 
+- 4 stories for KPI Guide Questions & Coaching Database
+- 5 stories for System Administration & Reporting 
