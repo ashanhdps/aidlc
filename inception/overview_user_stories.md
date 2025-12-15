@@ -393,7 +393,4 @@ This document contains 27 comprehensive user stories covering all major features
 - 5 stories for Real-Time KPI Dashboard  
 - 5 stories for Performance Reviews
 - 4 stories for Continuous Feedback & Recognition
-- 4 stories for KPI Guide Questions & Coaching Database
-- 3 stories for System Administration & Reporting
-
-Each story includes detailed acceptance criteria to guide development and testing efforts.
+- 4 stories for 
