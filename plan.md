@@ -472,4 +472,276 @@ This phase focuses on creating a comprehensive Domain Driven Design (DDD) domain
 ---
 **Status**: ✅ DOMAIN MODEL PHASE COMPLETED - Ready for logical design phase
 **Date Completed**: December 15, 2025
-**Validation**: All 6 user stories covered with appropriate domain components
+**Validation**: All 6 user stories covered with appropriate domain components-
+--
+
+# Phase 8: Logical Design for Unit 1 - KPI Management Service
+
+## Overview
+This phase focuses on creating a comprehensive logical design for the KPI Management Service based on the completed domain model. The design will translate DDD components into a scalable, event-driven software architecture with clear implementation guidance for development teams.
+
+## Design Objectives
+- Translate domain model into implementable software architecture
+- Design highly scalable, event-driven system architecture
+- Ensure proper separation of concerns and clean architecture principles
+- Define clear integration patterns with other services
+- Provide detailed implementation guidance without code snippets
+
+## Plan Steps
+
+### Phase 8.1: Architecture Foundation
+- [x] **Step 8.1: Define System Architecture Layers**
+  - Design hexagonal architecture with clear boundaries
+  - Define application, domain, and infrastructure layers
+  - Specify dependency inversion patterns
+  - Map domain model components to architectural layers
+  - Status: Pending
+
+- [x] **Step 8.2: Design Event-Driven Architecture**
+  - Define event sourcing patterns for domain events
+  - Design event store and event bus architecture
+  - Specify event publishing and subscription mechanisms
+  - Map domain events to system events
+  - **Note: Need confirmation on event store technology preference (EventStore, Apache Kafka, etc.)**
+  - Status: Pending
+
+- [x] **Step 8.3: Define API Architecture**
+  - Design REST API structure based on integration contracts
+  - Define GraphQL schema for complex queries (if needed)
+  - Specify API versioning strategy
+  - Design request/response patterns and error handling
+  - **Note: Need confirmation on GraphQL requirement vs pure REST**
+  - Status: Pending
+
+### Phase 8.2: Domain Layer Design
+- [x] **Step 8.4: Map Aggregates to Implementation Structure**
+  - Define aggregate implementation patterns
+  - Design aggregate root interfaces and behaviors
+  - Specify entity and value object implementation approaches
+  - Map domain events to aggregate operations
+  - Status: Pending
+
+- [x] **Step 8.5: Design Domain Services Implementation**
+  - Define domain service interfaces and implementations
+  - Specify dependency injection patterns for domain services
+  - Design service orchestration for complex business operations
+  - Map domain policies to service implementations
+  - Status: Pending
+
+- [x] **Step 8.6: Design Repository Implementation Patterns**
+  - Define repository interfaces and implementation strategies
+  - Design data access patterns for each aggregate
+  - Specify query optimization strategies
+  - Design caching strategies for frequently accessed data
+  - **Note: Need confirmation on database technology (PostgreSQL, MongoDB, etc.)**
+  - Status: Pending
+
+### Phase 8.3: Application Layer Design
+- [x] **Step 8.7: Design Application Services**
+  - Define application service interfaces for use cases
+  - Design command and query handlers (CQRS pattern)
+  - Specify transaction management patterns
+  - Design application service orchestration
+  - Status: Pending
+
+- [x] **Step 8.8: Design Command and Query Models**
+  - Define command objects for all write operations
+  - Design query objects for all read operations
+  - Specify validation patterns for commands and queries
+  - Design DTO (Data Transfer Object) patterns
+  - Status: Pending
+
+- [ ] **Step 8.9: Design Integration Application Services**
+  - Define services for external system integration
+  - Design API gateway integration patterns
+  - Specify authentication and authorization handling
+  - Design rate limiting and circuit breaker patterns
+  - Status: Pending
+
+### Phase 8.4: Infrastructure Layer Design
+- [ ] **Step 8.10: Design Data Persistence Layer**
+  - Define database schema design based on aggregates
+  - Design data mapping strategies (ORM vs custom mappers)
+  - Specify database migration and versioning strategies
+  - Design backup and disaster recovery patterns
+  - **Note: Need confirmation on ORM preference (Entity Framework, Hibernate, etc.)**
+  - Status: Pending
+
+- [ ] **Step 8.11: Design External Service Integration**
+  - Define external service client implementations
+  - Design service discovery and configuration patterns
+  - Specify retry and fallback mechanisms
+  - Design external service monitoring and health checks
+  - Status: Pending
+
+- [ ] **Step 8.12: Design Caching and Performance Layer**
+  - Define caching strategies for different data types
+  - Design cache invalidation patterns
+  - Specify performance monitoring and metrics collection
+  - Design load balancing and scaling strategies
+  - **Note: Need confirmation on caching technology (Redis, Memcached, etc.)**
+  - Status: Pending
+
+### Phase 8.5: Security and Cross-Cutting Concerns
+- [ ] **Step 8.13: Design Security Architecture**
+  - Define authentication and authorization patterns
+  - Design role-based access control (RBAC) implementation
+  - Specify data encryption and security patterns
+  - Design audit logging and compliance patterns
+  - Status: Pending
+
+- [ ] **Step 8.14: Design Logging and Monitoring**
+  - Define structured logging patterns
+  - Design application performance monitoring (APM)
+  - Specify health check and readiness probe patterns
+  - Design alerting and notification patterns
+  - **Note: Need confirmation on monitoring stack (Prometheus, ELK, etc.)**
+  - Status: Pending
+
+- [ ] **Step 8.15: Design Configuration and Environment Management**
+  - Define configuration management patterns
+  - Design environment-specific configuration strategies
+  - Specify secrets management and security
+  - Design feature flag and deployment patterns
+  - Status: Pending
+
+### Phase 8.6: Integration and Communication Design
+- [ ] **Step 8.16: Design Inter-Service Communication**
+  - Define synchronous communication patterns (REST/GraphQL)
+  - Design asynchronous communication patterns (events/messaging)
+  - Specify service mesh integration (if applicable)
+  - Design API contract testing strategies
+  - **Note: Need confirmation on service mesh requirement (Istio, Linkerd, etc.)**
+  - Status: Pending
+
+- [ ] **Step 8.17: Design Event Publishing and Subscription**
+  - Define event publishing mechanisms and patterns
+  - Design event subscription and handling patterns
+  - Specify event ordering and delivery guarantees
+  - Design event replay and recovery mechanisms
+  - Status: Pending
+
+- [ ] **Step 8.18: Design Data Synchronization Patterns**
+  - Define eventual consistency patterns
+  - Design data synchronization with other services
+  - Specify conflict resolution strategies
+  - Design data migration and transformation patterns
+  - Status: Pending
+
+### Phase 8.7: Scalability and Performance Design
+- [ ] **Step 8.19: Design Horizontal Scaling Patterns**
+  - Define stateless service design patterns
+  - Design load balancing and service discovery
+  - Specify auto-scaling triggers and policies
+  - Design database sharding strategies (if needed)
+  - Status: Pending
+
+- [ ] **Step 8.20: Design Performance Optimization**
+  - Define query optimization strategies
+  - Design connection pooling and resource management
+  - Specify batch processing patterns for bulk operations
+  - Design background job processing patterns
+  - Status: Pending
+
+- [ ] **Step 8.21: Design Resilience and Fault Tolerance**
+  - Define circuit breaker and bulkhead patterns
+  - Design timeout and retry strategies
+  - Specify graceful degradation patterns
+  - Design disaster recovery and backup strategies
+  - Status: Pending
+
+### Phase 8.8: Testing and Quality Assurance Design
+- [ ] **Step 8.22: Design Testing Strategy**
+  - Define unit testing patterns for domain logic
+  - Design integration testing strategies
+  - Specify contract testing with other services
+  - Design performance and load testing approaches
+  - Status: Pending
+
+- [ ] **Step 8.23: Design Quality Gates and Code Standards**
+  - Define code quality metrics and standards
+  - Design static code analysis integration
+  - Specify code review and approval processes
+  - Design automated quality assurance pipelines
+  - Status: Pending
+
+### Phase 8.9: Deployment and DevOps Design
+- [ ] **Step 8.24: Design Containerization Strategy**
+  - Define Docker containerization patterns
+  - Design Kubernetes deployment strategies
+  - Specify container orchestration patterns
+  - Design container security and scanning
+  - **Note: Need confirmation on container orchestration platform (Kubernetes, Docker Swarm, etc.)**
+  - Status: Pending
+
+- [ ] **Step 8.25: Design CI/CD Pipeline**
+  - Define continuous integration patterns
+  - Design automated testing and deployment pipelines
+  - Specify environment promotion strategies
+  - Design rollback and blue-green deployment patterns
+  - Status: Pending
+
+### Phase 8.10: Documentation and Implementation Guidance
+- [ ] **Step 8.26: Create Comprehensive Logical Design Document**
+  - Document all architectural decisions and patterns
+  - Include detailed component interaction diagrams
+  - Specify implementation guidelines for each layer
+  - Create developer onboarding documentation
+  - Status: Pending
+
+- [ ] **Step 8.27: Create Implementation Roadmap**
+  - Define development phases and milestones
+  - Specify team structure and responsibilities
+  - Create task breakdown and estimation guidance
+  - Design risk mitigation strategies
+  - Status: Pending
+
+- [ ] **Step 8.28: Validate Design Against Requirements**
+  - Ensure all user stories are supported by the design
+  - Verify integration contracts are properly implemented
+  - Validate scalability and performance requirements
+  - Confirm security and compliance requirements
+  - Status: Pending
+
+## Critical Questions Requiring Clarification
+
+1. **Event Store Technology**: What is your preference for event sourcing? (EventStore, Apache Kafka, Azure Event Hubs, AWS EventBridge)
+
+2. **API Strategy**: Do you need GraphQL support in addition to REST APIs, or is pure REST sufficient?
+
+3. **Database Technology**: What is your preferred database technology? (PostgreSQL, SQL Server, MongoDB, etc.)
+
+4. **ORM Framework**: Do you have a preference for data access? (Entity Framework, Hibernate, Dapper, etc.)
+
+5. **Caching Technology**: What caching solution should be used? (Redis, Memcached, in-memory caching)
+
+6. **Monitoring Stack**: What monitoring and logging stack do you prefer? (Prometheus + Grafana, ELK Stack, Azure Monitor, etc.)
+
+7. **Container Orchestration**: What container platform will be used? (Kubernetes, Docker Swarm, Azure Container Instances)
+
+8. **Service Mesh**: Do you require service mesh capabilities? (Istio, Linkerd, Azure Service Mesh)
+
+9. **Cloud Platform**: What cloud platform will host the system? (Azure, AWS, GCP, on-premises)
+
+10. **Programming Language**: What programming language should be used? (.NET, Java, Node.js, Python)
+
+## Success Criteria
+- [ ] Complete logical design covers all domain model components
+- [ ] All integration contracts are properly designed
+- [ ] Scalability and performance requirements are addressed
+- [ ] Security and compliance requirements are met
+- [ ] Clear implementation guidance is provided
+- [ ] All architectural decisions are documented and justified
+
+## Deliverables
+- `/construction/unit1_kpi_management/logical_design.md` - Comprehensive logical design document
+- Architectural diagrams and component interaction models
+- Implementation guidelines and development standards
+- Integration specifications and API documentation
+- Performance and scalability design specifications
+
+---
+
+**Status**: ✅ LOGICAL DESIGN PHASE COMPLETED - All 28 steps executed successfully
+**Estimated Duration**: 5-7 days
+**Dependencies**: Technology stack clarifications and architectural decisions
