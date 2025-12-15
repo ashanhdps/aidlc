@@ -290,8 +290,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 **US-019: Provide KPI-Specific Feedback**
 - **As a** Supervisor
 - **I want to** provide real-time feedback tied to specific KPI performance and suggest training material for improvement of KPI
-- **So that** employees receive timely recognition and coaching
-
+- **So that** employees receive timely recognition and coaching 
 **Acceptance Criteria:**
 - I can link feedback directly to specific KPIs
 - System suggests feedback based on KPI performance
@@ -319,7 +318,8 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - **So that** we can build a culture of appreciation and collaboration
 
 **Acceptance Criteria:**
-- I can send recognition messages to colleagues
+- I can send recognition messages to colleagues anonymously
+- Add limitations to accept recognition from the same team
 - Recognition can be linked to specific KPI impacts
 - I can choose from monetary and non-monetary reward options
 - Recognition is visible to relevant team members
