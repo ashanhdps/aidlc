@@ -660,14 +660,14 @@ Frontend applications have unique domain characteristics:
   - Include diagrams and relationships
 
 ### Execution Phase
-- [ ] **Step 8: Execute Domain Analysis** ✓ (Mark when completed)
-- [ ] **Step 9: Design Aggregates** ✓ (Mark when completed)  
-- [ ] **Step 10: Define Entities and Value Objects** ✓ (Mark when completed)
-- [ ] **Step 11: Design Domain Events** ✓ (Mark when completed)
-- [ ] **Step 12: Define Services and Policies** ✓ (Mark when completed)
-- [ ] **Step 13: Design Repository Interfaces** ✓ (Mark when completed)
-- [ ] **Step 14: Create Documentation** ✓ (Mark when completed)
-- [ ] **Step 15: Review and Finalize** ✓ (Mark when completed)
+- [x] **Step 8: Execute Domain Analysis** ✓ (Mark when completed)
+- [x] **Step 9: Design Aggregates** ✓ (Mark when completed)  
+- [x] **Step 10: Define Entities and Value Objects** ✓ (Mark when completed)
+- [x] **Step 11: Design Domain Events** ✓ (Mark when completed)
+- [x] **Step 12: Define Services and Policies** ✓ (Mark when completed)
+- [x] **Step 13: Design Repository Interfaces** ✓ (Mark when completed)
+- [x] **Step 14: Create Documentation** ✓ (Mark when completed)
+- [x] **Step 15: Review and Finalize** ✓ (Mark when completed)
 
 ### Questions for Clarification - ANSWERED:
 1. **Data Consistency Requirements**: ✅ SKIPPED - Will design for eventual consistency
@@ -677,3 +677,133 @@ Frontend applications have unique domain characteristics:
 
 ---
 **Status**: ⏳ READY TO EXECUTE - Plan approved, ready to begin execution step by step
+
+---
+
+## Step 2.2: Create Logical Design for Unit 3: Data & Analytics Service
+
+### Overview
+Create a comprehensive logical design for Unit 3: Data & Analytics Service using containerized architecture with ECS Fargate. This design will focus on scalable, maintainable software architecture that supports data integration, analytics processing, system administration, and reporting capabilities.
+
+### Prerequisites Check
+- [ ] **Step 2.2.0: Verify Domain Model Availability**
+  - Check if domain model exists at `/construction/data_analytics/domain_model.md`
+  - If not available, proceed with logical design based on user stories and integration contracts
+  - **Note: Domain model is preferred but not blocking for logical design**
+
+### Planning Phase
+- [ ] **Step 2.2.1: Analyze Requirements and Architecture Context**
+  - Review Unit 3 user stories and acceptance criteria
+  - Analyze integration contract requirements and API specifications
+  - Identify key architectural drivers and quality attributes
+  - Map functional requirements to architectural components
+
+- [ ] **Step 2.2.2: Define Architecture Principles and Constraints**
+  - Establish containerized architecture principles for ECS Fargate
+  - Define scalability, reliability, and performance requirements
+  - Identify security and compliance constraints
+  - Document technology stack decisions and rationale
+  - **Note: Need confirmation on preferred technology stack (Java/Spring, .NET, Node.js, Python, etc.)**
+
+- [ ] **Step 2.2.3: Design High-Level Architecture**
+  - Define service boundaries and component structure
+  - Design container architecture for ECS Fargate deployment
+  - Establish data flow and integration patterns
+  - Define external system integration approach
+
+### Core Architecture Design
+- [ ] **Step 2.2.4: Design Application Layer Architecture**
+  - Define API layer structure and endpoint organization
+  - Design service layer for business logic implementation
+  - Establish application service patterns and responsibilities
+  - Map user stories to application services
+
+- [ ] **Step 2.2.5: Design Data Architecture**
+  - Define database schema design and data modeling approach
+  - Design data access layer and repository patterns
+  - Establish data integration and ETL pipeline architecture
+  - Define caching strategy and data synchronization patterns
+  - **Note: Need confirmation on database technology preference (PostgreSQL, MySQL, etc.)**
+
+- [ ] **Step 2.2.6: Design Integration Architecture**
+  - Define external system integration patterns (Salesforce, SAP, etc.)
+  - Design API client architecture for external data sources
+  - Establish message queuing and event-driven architecture
+  - Define data transformation and validation pipelines
+
+### Infrastructure and Deployment Design
+- [ ] **Step 2.2.7: Design ECS Fargate Container Architecture**
+  - Define container structure and Dockerfile specifications
+  - Design service discovery and load balancing approach
+  - Establish auto-scaling policies and resource allocation
+  - Define networking and security group configurations
+
+- [ ] **Step 2.2.8: Design Monitoring and Observability**
+  - Define logging strategy and structured logging approach
+  - Design metrics collection and monitoring dashboards
+  - Establish health check and alerting mechanisms
+  - Define distributed tracing and performance monitoring
+
+- [ ] **Step 2.2.9: Design Security Architecture**
+  - Define authentication and authorization mechanisms
+  - Design API security and rate limiting strategies
+  - Establish data encryption and security policies
+  - Define audit logging and compliance requirements
+
+### Advanced Architecture Components
+- [ ] **Step 2.2.10: Design Analytics and Reporting Architecture**
+  - Define analytics processing pipeline and data aggregation
+  - Design report generation and template management system
+  - Establish real-time analytics and dashboard data flow
+  - Define data warehouse and business intelligence integration
+
+- [ ] **Step 2.2.11: Design Background Processing Architecture**
+  - Define job scheduling and background task processing
+  - Design data synchronization and ETL job architecture
+  - Establish retry mechanisms and error handling strategies
+  - Define workflow orchestration for complex processes
+
+- [ ] **Step 2.2.12: Design Configuration and Administration**
+  - Define system configuration management approach
+  - Design user management and role-based access control
+  - Establish system administration interfaces and tools
+  - Define deployment and environment management strategies
+
+### Documentation and Validation
+- [ ] **Step 2.2.13: Create Comprehensive Architecture Documentation**
+  - Document complete logical design with diagrams and specifications
+  - Include component interaction diagrams and data flow charts
+  - Document deployment architecture and infrastructure requirements
+  - Create API design specifications and interface contracts
+
+- [ ] **Step 2.2.14: Validate Architecture Against Requirements**
+  - Verify all user story acceptance criteria are addressed
+  - Validate integration contract compliance and API specifications
+  - Check scalability and performance requirement coverage
+  - Ensure security and compliance requirements are met
+
+- [ ] **Step 2.2.15: Create Implementation Guidance**
+  - Define development team structure and responsibilities
+  - Create implementation roadmap and milestone planning
+  - Document coding standards and development practices
+  - Establish testing strategy and quality assurance approach
+
+### Key Questions for Clarification:
+1. **Technology Stack**: What is the preferred technology stack? (Java/Spring Boot, .NET Core, Node.js/Express, Python/FastAPI, etc.)
+2. **Database Technology**: What database technology should be used? (PostgreSQL, MySQL, MongoDB, etc.)
+3. **Message Queue**: What message queuing system is preferred? (AWS SQS, RabbitMQ, Apache Kafka, etc.)
+4. **Caching Strategy**: What caching technology should be used? (Redis, ElastiCache, in-memory caching, etc.)
+5. **File Storage**: What file storage solution for reports? (AWS S3, EFS, etc.)
+6. **Analytics Platform**: Should we integrate with specific analytics platforms? (AWS QuickSight, Tableau, Power BI, etc.)
+
+### Expected Deliverables:
+- `/construction/data_analytics/logical_design.md` - Complete logical design document
+- Architecture diagrams and component specifications
+- Container and deployment architecture design
+- API specifications and interface contracts
+- Database schema and data architecture design
+- Security and monitoring architecture specifications
+- Implementation guidance and development roadmap
+
+---
+**Status**: ⏳ READY TO START - Awaiting your review, technology stack preferences, and approval to begin logical design
