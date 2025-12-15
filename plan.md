@@ -618,3 +618,62 @@ Frontend applications have unique domain characteristics:
 
 ---
 **Status**: ⏳ READY TO START - Awaiting your review and approval to begin frontend domain modeling
+
+---
+
+## Step 2.1: Design Domain Model with DDD for Unit 3: Data & Analytics Service
+
+### Planning Phase
+- [ ] **Step 1: Analyze Requirements and Identify Core Domain Concepts**
+  - Review Unit 3 user stories and identify key business concepts
+  - Map business capabilities to domain concepts
+  - Identify bounded context boundaries within the unit
+
+- [ ] **Step 2: Identify Aggregates and Aggregate Roots**
+  - Define aggregate boundaries based on business invariants
+  - Identify aggregate roots that ensure consistency
+  - Map relationships between aggregates
+
+- [ ] **Step 3: Define Entities and Value Objects**
+  - Identify entities with unique identity within each aggregate
+  - Define value objects for immutable concepts
+  - Establish entity relationships and lifecycle management
+
+- [ ] **Step 4: Design Domain Events**
+  - Identify significant business events that other bounded contexts need to know about
+  - Define event structure and timing
+  - Map events to business processes
+
+- [ ] **Step 5: Define Domain Services and Policies**
+  - Identify complex business logic that doesn't belong to entities
+  - Define business policies and rules
+  - Design domain services for cross-aggregate operations
+
+- [ ] **Step 6: Design Repository Interfaces**
+  - Define repository contracts for aggregate persistence
+  - Specify query methods needed by the domain
+  - Consider data access patterns and performance requirements
+
+- [ ] **Step 7: Create Folder Structure and Documentation**
+  - Create /construction/data_analytics/ folder structure
+  - Write comprehensive domain_model.md documentation
+  - Include diagrams and relationships
+
+### Execution Phase
+- [ ] **Step 8: Execute Domain Analysis** ✓ (Mark when completed)
+- [ ] **Step 9: Design Aggregates** ✓ (Mark when completed)  
+- [ ] **Step 10: Define Entities and Value Objects** ✓ (Mark when completed)
+- [ ] **Step 11: Design Domain Events** ✓ (Mark when completed)
+- [ ] **Step 12: Define Services and Policies** ✓ (Mark when completed)
+- [ ] **Step 13: Design Repository Interfaces** ✓ (Mark when completed)
+- [ ] **Step 14: Create Documentation** ✓ (Mark when completed)
+- [ ] **Step 15: Review and Finalize** ✓ (Mark when completed)
+
+### Questions for Clarification - ANSWERED:
+1. **Data Consistency Requirements**: ✅ SKIPPED - Will design for eventual consistency
+2. **Report Storage**: ✅ ANSWERED - Permanent storage with 3-year retention policy
+3. **Analytics Model Complexity**: ✅ ANSWERED - Simple analytics for now, no ML workflows
+4. **Approval Workflow Scope**: ✅ ANSWERED - Extensible to other units (recommended and approved)
+
+---
+**Status**: ⏳ READY TO EXECUTE - Plan approved, ready to begin execution step by step
