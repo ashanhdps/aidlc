@@ -183,13 +183,14 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - **As an** HR Personnel
 - **I want to** build reviews around KPI achievement percentages and competencies
 - **So that** performance evaluations are objective and comprehensive
-
+ 
 **Acceptance Criteria:**
 - Reviews automatically pull KPI achievement data
 - I can configure KPI vs. competency weighting (e.g., 70%/30%)
 - System calculates overall performance scores
 - I can include qualitative assessment sections
 - Review templates support multiple evaluation criteria
+- Review process is initiated after Supervisor and Employee have finalized their scoring of employee's KPI
 
 ### 3.2 Review Process
 
@@ -197,13 +198,15 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - **As an** Employee
 - **I want to** complete self-assessments as part of my performance review
 - **So that** I can provide my perspective on my performance and development
-
+ 
 **Acceptance Criteria:**
 - I can access my review form during review periods
 - I can rate my own KPI performance with comments
 - I can assess my competencies and behaviors
 - I can set goals and development objectives
 - I can save drafts and submit when complete
+- I can indicate extra mile efforts that I've achieved
+- I can upload proof of performance to back up my KPI self-assessments
 
 **US-015: Manager Performance Scoring**
 - **As a** Supervisor
