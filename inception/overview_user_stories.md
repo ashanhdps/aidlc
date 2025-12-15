@@ -147,9 +147,24 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can drill down from company to department to individual level
 - I can generate executive summary reports
 
+**US-011: Historical Employee Performance Analysis**
+- **As a** Supervisor or HR Personnel
+- **I want to** view historical performance data and trends for individual employees
+- **So that** I can assess past performance patterns and track improvement over time
+
+**Acceptance Criteria:**
+- I can view employee performance history over multiple review periods
+- Dashboard displays performance trends with visual charts and graphs
+- I can compare current performance against historical baselines
+- I can identify performance improvement patterns and declining trends
+- I can view historical KPI achievements, feedback received, and coaching sessions
+- I can generate historical performance reports for talent development discussions
+- I can filter historical data by time periods, KPIs, or performance categories
+- System highlights significant performance changes and milestones
+
 ### 2.3 Data Integration
 
-**US-011: Automatic Data Integration**
+**US-012: Automatic Data Integration**
 - **As a** System Administrator
 - **I want to** configure automatic data pulls from various business systems
 - **So that** KPI tracking is automated and accurate
@@ -167,7 +182,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 3.1 Review Configuration
 
-**US-012: Configure Review Templates**
+**US-013: Configure Review Templates**
 - **As an** HR Personnel
 - **I want to** create configurable performance review templates
 - **So that** reviews are consistent and aligned with organizational standards
@@ -179,7 +194,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can define rating scales and criteria
 - Templates can be assigned to specific roles or departments
 
-**US-013: Structure KPI-Based Reviews**
+**US-014: Structure KPI-Based Reviews**
 - **As an** HR Personnel
 - **I want to** build reviews around KPI achievement percentages and competencies
 - **So that** performance evaluations are objective and comprehensive
@@ -193,7 +208,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 3.2 Review Process
 
-**US-014: Conduct Self-Assessment**
+**US-015: Conduct Self-Assessment**
 - **As an** Employee
 - **I want to** complete self-assessments as part of my performance review
 - **So that** I can provide my perspective on my performance and development
@@ -205,7 +220,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can set goals and development objectives
 - I can save drafts and submit when complete
 
-**US-015: Manager Performance Scoring**
+**US-016: Manager Performance Scoring**
 - **As a** Supervisor
 - **I want to** score my direct reports' performance and compare with self-assessments
 - **So that** I can provide fair and comprehensive performance evaluations
@@ -217,7 +232,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can add detailed comments and feedback
 - I can recommend salary adjustments or promotions
 
-**US-016: Review Calibration Tools**
+**US-017: Review Calibration Tools**
 - **As a** Supervisor
 - **I want to** use calibration tools to ensure consistent rating standards
 - **So that** performance evaluations are fair across the organization
@@ -235,7 +250,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 4.1 Real-Time Feedback
 
-**US-017: Provide KPI-Specific Feedback**
+**US-018: Provide KPI-Specific Feedback**
 - **As a** Supervisor
 - **I want to** provide real-time feedback tied to specific KPI performance
 - **So that** employees receive timely recognition and coaching
@@ -247,7 +262,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Feedback is immediately visible to the employee
 - I can schedule follow-up conversations
 
-**US-018: Receive Performance Feedback**
+**US-019: Receive Performance Feedback**
 - **As an** Employee
 - **I want to** receive timely feedback on my KPI performance
 - **So that** I can adjust my approach and improve continuously
@@ -261,7 +276,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 4.2 Peer Recognition
 
-**US-019: Peer Recognition System**
+**US-020: Peer Recognition System**
 - **As an** Employee
 - **I want to** recognize colleagues for their contributions and KPI achievements
 - **So that** we can build a culture of appreciation and collaboration
@@ -273,7 +288,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Recognition is visible to relevant team members
 - System tracks recognition patterns and frequency
 
-**US-020: Slack/Teams Integration**
+**US-021: Slack/Teams Integration**
 - **As an** Employee
 - **I want to** give and receive recognition through Slack/Teams bots
 - **So that** feedback and recognition fit naturally into our workflow
@@ -291,7 +306,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 5.1 Coaching Question Management
 
-**US-021: Create KPI Coaching Questions**
+**US-022: Create KPI Coaching Questions**
 - **As a** Supervisor
 - **I want to** create and manage coaching questions for each KPI
 - **So that** I can provide structured guidance to my team members
@@ -303,7 +318,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - System provides question templates and examples
 - I can share questions with other managers
 
-**US-022: AI-Generated Coaching Questions**
+**US-023: AI-Generated Coaching Questions**
 - **As a** Supervisor
 - **I want to** receive AI-generated coaching questions based on KPI descriptions
 - **So that** I can quickly access relevant coaching guidance
@@ -317,7 +332,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 5.2 Coaching Database
 
-**US-023: Access Coaching Database**
+**US-024: Access Coaching Database**
 - **As a** Supervisor
 - **I want to** access a comprehensive database of coaching resources
 - **So that** I can effectively support employee development
@@ -329,7 +344,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - I can contribute to and rate coaching resources
 - Database is regularly updated with new content
 
-**US-024: Coaching Session Tracking**
+**US-025: Coaching Session Tracking**
 - **As a** Supervisor
 - **I want to** track coaching sessions and their outcomes
 - **So that** I can monitor employee development progress
@@ -347,7 +362,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 6.1 System Configuration
 
-**US-025: System Administration**
+**US-026: System Administration**
 - **As a** System Administrator
 - **I want to** configure system settings and user permissions
 - **So that** the platform operates securely and efficiently
@@ -361,7 +376,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 ### 6.2 Analytics and Reporting
 
-**US-026: Generate Performance Reports**
+**US-027: Generate Performance Reports**
 - **As an** Executive Manager
 - **I want to** generate comprehensive performance analytics and reports
 - **So that** I can make data-driven organizational decisions
@@ -373,7 +388,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 - Reports can be exported in multiple formats (PDF, Excel, etc.)
 - I can create executive dashboards with key performance indicators
 
-**US-027: HR Analytics Dashboard**
+**US-028: HR Analytics Dashboard**
 - **As an** HR Personnel
 - **I want to** access HR-specific analytics and insights
 - **So that** I can optimize performance management processes
@@ -388,9 +403,9 @@ A digital platform that helps organizations set, track, and evaluate employee go
 ---
 
 ## Summary
-This document contains 27 comprehensive user stories covering all major features of the Employee Performance System:
+This document contains 28 comprehensive user stories covering all major features of the Employee Performance System:
 - 6 stories for KPI Definition & Assignment
-- 5 stories for Real-Time KPI Dashboard  
+- 6 stories for Real-Time KPI Dashboard  
 - 5 stories for Performance Reviews
 - 4 stories for Continuous Feedback & Recognition
 - 4 stories for KPI Guide Questions & Coaching Database
