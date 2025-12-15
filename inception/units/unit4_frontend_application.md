@@ -148,29 +148,6 @@ The Frontend Application unit provides all user interfaces and user experience c
 - Interface shows feedback linked to specific KPIs with visual connections
 - Feedback sentiment is indicated with appropriate visual cues (positive/constructive)
 
-### US-021: Peer Recognition System (UI Components)
-- **As an** Employee
-- **I want to** give recognition through an easy-to-use interface
-- **So that** I can quickly appreciate colleagues' contributions
-
-**UI-Specific Acceptance Criteria:**
-- Recognition interface is accessible from multiple locations in the application
-- I can search for colleagues with autocomplete functionality
-- Recognition templates and categories are available for quick selection
-- Interface supports both public and anonymous recognition options
-- Recognition feed shows team achievements with engaging visual design
-
-### US-022: Slack/Teams Integration (UI Components)
-- **As an** Employee
-- **I want to** see integration status and manage bot settings through the UI
-- **So that** I can control how the system interacts with my communication tools
-
-**UI-Specific Acceptance Criteria:**
-- Integration settings page allows me to connect/disconnect Slack/Teams accounts
-- I can configure notification preferences for bot interactions
-- Interface shows integration status and recent bot activity
-- Settings allow me to customize which updates are sent to communication platforms
-
 ## Key UI Components & Features
 - **Responsive Design**: Mobile-first approach supporting desktop, tablet, and mobile devices
 - **Accessibility**: WCAG 2.1 AA compliance with screen reader support and keyboard navigation
