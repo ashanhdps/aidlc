@@ -472,8 +472,9 @@ This phase focuses on creating a comprehensive Domain Driven Design (DDD) domain
 ---
 **Status**: ✅ DOMAIN MODEL PHASE COMPLETED - Ready for logical design phase
 **Date Completed**: December 15, 2025
-**Validation**: All 6 user stories covered with appropriate domain components-
---
+**Validation**: All 6 user stories covered with appropriate domain components
+
+---
 
 # Phase 8: Logical Design for Unit 1 - KPI Management Service
 
@@ -743,5 +744,425 @@ This phase focuses on creating a comprehensive logical design for the KPI Manage
 ---
 
 **Status**: ✅ LOGICAL DESIGN PHASE COMPLETED - All 28 steps executed successfully
-**Estimated Duration**: 5-7 days
-**Dependencies**: Technology stack clarifications and architectural decisions
+**Date Completed**: December 15, 2025
+**Implementation Ready**: Complete logical design with Java Spring Boot architecture
+
+# Phase 8: Domain Model Design for Unit 4 - Frontend Application
+
+## Overview
+This phase focuses on creating a comprehensive Domain Driven Design (DDD) domain model for Unit 4: Frontend Application. While frontend applications typically have different domain modeling considerations compared to backend services, we'll apply DDD tactical patterns to model the client-side domain including UI state management, user interactions, presentation logic, and client-side business rules.
+
+## Frontend Domain Modeling Approach
+Frontend applications have unique domain characteristics:
+- **UI State as Domain**: User interface state, form data, navigation state
+- **User Interaction Patterns**: Click streams, user journeys, interaction workflows  
+- **Presentation Logic**: Data transformation for display, validation rules, formatting
+- **Client-Side Caching**: Local data management, synchronization with backend
+- **User Experience Workflows**: Multi-step processes, wizards, progressive disclosure
+
+## Plan Steps
+
+### Phase 8.1: Analysis and Preparation
+- [ ] **Step 8.1: Analyze Frontend User Stories and Identify UI Domain Concepts**
+  - Extract key UI concepts from the 9 user stories
+  - Identify client-side business rules and validation logic
+  - Map user interaction workflows and UI state transitions
+  - **Note: Need your confirmation on treating UI components and state as domain entities**
+
+- [ ] **Step 8.2: Identify Frontend Ubiquitous Language**
+  - Create glossary of UI-specific domain terms (widgets, dashboards, forms, etc.)
+  - Define consistent terminology for user interactions and UI states
+  - Map frontend terms to backend domain concepts for consistency
+
+- [ ] **Step 8.3: Create Construction Folder Structure for Unit 4**
+  - Create `/construction/unit4_frontend_application/` subfolder
+  - Set up file structure for frontend domain model documentation
+  - **Note: This will follow the same pattern as Unit 1**
+
+### Phase 8.2: Frontend Domain Modeling
+- [ ] **Step 8.4: Identify and Design UI Aggregates**
+  - Define aggregates around UI consistency boundaries (e.g., Dashboard Aggregate, Form Aggregate)
+  - Identify UI state invariants and validation rules
+  - Map relationships between UI components and their state
+  - **Note: Need your guidance on whether to model UI components as aggregates or use a different approach**
+
+- [ ] **Step 8.5: Design UI Entities and Components**
+  - Define entity identity for stateful UI components
+  - Specify component attributes, props, and behaviors
+  - Establish component lifecycle and state management patterns
+
+- [ ] **Step 8.6: Design Frontend Value Objects**
+  - Identify immutable UI concepts (themes, configurations, display formats)
+  - Define value objects for form data, validation rules, and display preferences
+  - Model user preferences and settings as value objects
+
+- [ ] **Step 8.7: Define UI Domain Events**
+  - Identify significant user interaction events (clicks, form submissions, navigation)
+  - Design event structure for UI state changes and user actions
+  - Map events to user story workflows and acceptance criteria
+
+### Phase 8.3: Frontend Services and Policies
+- [ ] **Step 8.8: Design Frontend Domain Services**
+  - Identify UI operations that don't belong to specific components
+  - Define services for data transformation, validation, and formatting
+  - Specify client-side business logic services
+
+- [ ] **Step 8.9: Define UI Policies and Rules**
+  - Identify client-side business rules and validation policies
+  - Design policy implementations for form validation and UI behavior
+  - Map policies to user story acceptance criteria
+
+- [ ] **Step 8.10: Design Client-Side Repository Patterns**
+  - Define patterns for local data management and caching
+  - Specify client-side data synchronization with backend APIs
+  - Design offline data handling and conflict resolution
+
+### Phase 8.4: Advanced Frontend Domain Concepts
+- [ ] **Step 8.11: Design UI Factories and Builders**
+  - Identify complex UI component creation scenarios
+  - Design factory patterns for dynamic form generation and dashboard widgets
+  - Handle complex UI initialization and configuration logic
+
+- [ ] **Step 8.12: Define Frontend Specifications**
+  - Create specifications for UI validation rules and display logic
+  - Design reusable UI behavior specifications
+  - Implement composite specifications for complex UI states
+
+- [ ] **Step 8.13: Model Frontend Exceptions and Error Handling**
+  - Identify UI-specific error conditions and validation failures
+  - Design meaningful error handling for user interactions
+  - Map exceptions to user feedback and error recovery workflows
+
+### Phase 8.5: Integration and State Management
+- [ ] **Step 8.14: Define Frontend Integration Events**
+  - Design events for communication with backend services
+  - Specify API integration patterns and data synchronization
+  - Map real-time update handling and WebSocket integration
+
+- [ ] **Step 8.15: Model Application State Management**
+  - Define global application state structure and management
+  - Design state synchronization patterns between components
+  - Specify state persistence and hydration strategies
+
+- [ ] **Step 8.16: Validate Frontend Domain Model Against User Stories**
+  - Ensure all UI user story acceptance criteria are supported
+  - Verify client-side business rules are properly modeled
+  - Check that all user interaction workflows are covered
+
+### Phase 8.6: Documentation and Review
+- [ ] **Step 8.17: Create Comprehensive Frontend Domain Model Documentation**
+  - Document all UI aggregates, entities, and value objects
+  - Include UI domain events and their triggers
+  - Document frontend services and policies
+  - Create UI component relationship diagrams
+
+- [ ] **Step 8.18: Document UI Business Rules and Validation Logic**
+  - List all client-side business rules with their enforcement points
+  - Document UI state invariants and consistency rules
+  - Include form validation rules and user interaction constraints
+
+- [ ] **Step 8.19: Create Frontend Integration Specifications**
+  - Document API consumption patterns and data transformation
+  - Specify real-time update handling and WebSocket integration
+  - Include client-side caching and synchronization strategies
+
+## Key Questions for Your Input:
+1. **UI Domain Modeling Approach**: Do you want to treat UI components and state as domain entities, or prefer a different modeling approach for frontend?
+2. **Aggregation Strategy**: Should UI aggregates be organized around functional areas (dashboards, forms) or user workflows?
+3. **State Management**: How detailed should the domain model be regarding client-side state management patterns?
+4. **Integration Focus**: Should the model emphasize API integration patterns or focus more on pure UI domain logic?
+5. **Validation Scope**: Should client-side validation rules be modeled as domain policies, or treated as technical implementation details?
+
+## Expected Deliverables:
+- `/construction/unit4_frontend_application/domain_model.md` - Complete frontend DDD domain model
+- UI Aggregates with proper boundaries and state management
+- Frontend Entities representing stateful UI components
+- Value Objects for UI configurations and immutable display data
+- UI Domain Events for user interactions and state changes
+- Frontend Domain Services for client-side business logic
+- UI Policies, Repository Patterns, Factories, and Specifications
+- Complete validation against all 9 frontend user stories
+
+## Notes:
+- This is a unique application of DDD to frontend development
+- The model will focus on client-side domain logic rather than just technical UI patterns
+- Integration with backend domain models will be clearly specified
+- The approach may differ from traditional backend DDD modeling
+
+---
+**Status**: ⏳ READY TO START - Awaiting your review and approval to begin frontend domain modeling
+
+---
+
+## Step 2.1: Design Domain Model with DDD for Unit 3: Data & Analytics Service
+
+### Planning Phase
+- [ ] **Step 1: Analyze Requirements and Identify Core Domain Concepts**
+  - Review Unit 3 user stories and identify key business concepts
+  - Map business capabilities to domain concepts
+  - Identify bounded context boundaries within the unit
+
+- [ ] **Step 2: Identify Aggregates and Aggregate Roots**
+  - Define aggregate boundaries based on business invariants
+  - Identify aggregate roots that ensure consistency
+  - Map relationships between aggregates
+
+- [ ] **Step 3: Define Entities and Value Objects**
+  - Identify entities with unique identity within each aggregate
+  - Define value objects for immutable concepts
+  - Establish entity relationships and lifecycle management
+
+- [ ] **Step 4: Design Domain Events**
+  - Identify significant business events that other bounded contexts need to know about
+  - Define event structure and timing
+  - Map events to business processes
+
+- [ ] **Step 5: Define Domain Services and Policies**
+  - Identify complex business logic that doesn't belong to entities
+  - Define business policies and rules
+  - Design domain services for cross-aggregate operations
+
+- [ ] **Step 6: Design Repository Interfaces**
+  - Define repository contracts for aggregate persistence
+  - Specify query methods needed by the domain
+  - Consider data access patterns and performance requirements
+
+- [ ] **Step 7: Create Folder Structure and Documentation**
+  - Create /construction/data_analytics/ folder structure
+  - Write comprehensive domain_model.md documentation
+  - Include diagrams and relationships
+
+### Execution Phase
+- [x] **Step 8: Execute Domain Analysis** ✓ (Mark when completed)
+- [x] **Step 9: Design Aggregates** ✓ (Mark when completed)  
+- [x] **Step 10: Define Entities and Value Objects** ✓ (Mark when completed)
+- [x] **Step 11: Design Domain Events** ✓ (Mark when completed)
+- [x] **Step 12: Define Services and Policies** ✓ (Mark when completed)
+- [x] **Step 13: Design Repository Interfaces** ✓ (Mark when completed)
+- [x] **Step 14: Create Documentation** ✓ (Mark when completed)
+- [x] **Step 15: Review and Finalize** ✓ (Mark when completed)
+
+### Questions for Clarification - ANSWERED:
+1. **Data Consistency Requirements**: ✅ SKIPPED - Will design for eventual consistency
+2. **Report Storage**: ✅ ANSWERED - Permanent storage with 3-year retention policy
+3. **Analytics Model Complexity**: ✅ ANSWERED - Simple analytics for now, no ML workflows
+4. **Approval Workflow Scope**: ✅ ANSWERED - Extensible to other units (recommended and approved)
+
+---
+**Status**: ⏳ READY TO EXECUTE - Plan approved, ready to begin execution step by step
+
+---
+
+## Step 2.2: Create Logical Design for Unit 3: Data & Analytics Service
+
+### Overview
+Create a comprehensive logical design for Unit 3: Data & Analytics Service using containerized architecture with ECS Fargate. This design will focus on scalable, maintainable software architecture that supports data integration, analytics processing, system administration, and reporting capabilities.
+
+### Prerequisites Check
+- [ ] **Step 2.2.0: Verify Domain Model Availability**
+  - Check if domain model exists at `/construction/data_analytics/domain_model.md`
+  - If not available, proceed with logical design based on user stories and integration contracts
+  - **Note: Domain model is preferred but not blocking for logical design**
+
+### Planning Phase
+- [ ] **Step 2.2.1: Analyze Requirements and Architecture Context**
+  - Review Unit 3 user stories and acceptance criteria
+  - Analyze integration contract requirements and API specifications
+  - Identify key architectural drivers and quality attributes
+  - Map functional requirements to architectural components
+
+- [ ] **Step 2.2.2: Define Architecture Principles and Constraints**
+  - Establish containerized architecture principles for ECS Fargate
+  - Define scalability, reliability, and performance requirements
+  - Identify security and compliance constraints
+  - Document technology stack decisions and rationale
+  - **Note: Need confirmation on preferred technology stack (Java/Spring, .NET, Node.js, Python, etc.)**
+
+- [ ] **Step 2.2.3: Design High-Level Architecture**
+  - Define service boundaries and component structure
+  - Design container architecture for ECS Fargate deployment
+  - Establish data flow and integration patterns
+  - Define external system integration approach
+
+### Core Architecture Design
+- [ ] **Step 2.2.4: Design Application Layer Architecture**
+  - Define API layer structure and endpoint organization
+  - Design service layer for business logic implementation
+  - Establish application service patterns and responsibilities
+  - Map user stories to application services
+
+- [ ] **Step 2.2.5: Design Data Architecture**
+  - Define database schema design and data modeling approach
+  - Design data access layer and repository patterns
+  - Establish data integration and ETL pipeline architecture
+  - Define caching strategy and data synchronization patterns
+  - **Note: Need confirmation on database technology preference (PostgreSQL, MySQL, etc.)**
+
+- [ ] **Step 2.2.6: Design Integration Architecture**
+  - Define external system integration patterns (Salesforce, SAP, etc.)
+  - Design API client architecture for external data sources
+  - Establish message queuing and event-driven architecture
+  - Define data transformation and validation pipelines
+
+### Infrastructure and Deployment Design
+- [ ] **Step 2.2.7: Design ECS Fargate Container Architecture**
+  - Define container structure and Dockerfile specifications
+  - Design service discovery and load balancing approach
+  - Establish auto-scaling policies and resource allocation
+  - Define networking and security group configurations
+
+- [ ] **Step 2.2.8: Design Monitoring and Observability**
+  - Define logging strategy and structured logging approach
+  - Design metrics collection and monitoring dashboards
+  - Establish health check and alerting mechanisms
+  - Define distributed tracing and performance monitoring
+
+- [ ] **Step 2.2.9: Design Security Architecture**
+  - Define authentication and authorization mechanisms
+  - Design API security and rate limiting strategies
+  - Establish data encryption and security policies
+  - Define audit logging and compliance requirements
+
+### Advanced Architecture Components
+- [ ] **Step 2.2.10: Design Analytics and Reporting Architecture**
+  - Define analytics processing pipeline and data aggregation
+  - Design report generation and template management system
+  - Establish real-time analytics and dashboard data flow
+  - Define data warehouse and business intelligence integration
+
+- [ ] **Step 2.2.11: Design Background Processing Architecture**
+  - Define job scheduling and background task processing
+  - Design data synchronization and ETL job architecture
+  - Establish retry mechanisms and error handling strategies
+  - Define workflow orchestration for complex processes
+
+- [ ] **Step 2.2.12: Design Configuration and Administration**
+  - Define system configuration management approach
+  - Design user management and role-based access control
+  - Establish system administration interfaces and tools
+  - Define deployment and environment management strategies
+
+### Documentation and Validation
+- [ ] **Step 2.2.13: Create Comprehensive Architecture Documentation**
+  - Document complete logical design with diagrams and specifications
+  - Include component interaction diagrams and data flow charts
+  - Document deployment architecture and infrastructure requirements
+  - Create API design specifications and interface contracts
+
+- [ ] **Step 2.2.14: Validate Architecture Against Requirements**
+  - Verify all user story acceptance criteria are addressed
+  - Validate integration contract compliance and API specifications
+  - Check scalability and performance requirement coverage
+  - Ensure security and compliance requirements are met
+
+- [ ] **Step 2.2.15: Create Implementation Guidance**
+  - Define development team structure and responsibilities
+  - Create implementation roadmap and milestone planning
+  - Document coding standards and development practices
+  - Establish testing strategy and quality assurance approach
+
+### Key Questions for Clarification:
+1. **Technology Stack**: What is the preferred technology stack? (Java/Spring Boot, .NET Core, Node.js/Express, Python/FastAPI, etc.)
+2. **Database Technology**: What database technology should be used? (PostgreSQL, MySQL, MongoDB, etc.)
+3. **Message Queue**: What message queuing system is preferred? (AWS SQS, RabbitMQ, Apache Kafka, etc.)
+4. **Caching Strategy**: What caching technology should be used? (Redis, ElastiCache, in-memory caching, etc.)
+5. **File Storage**: What file storage solution for reports? (AWS S3, EFS, etc.)
+6. **Analytics Platform**: Should we integrate with specific analytics platforms? (AWS QuickSight, Tableau, Power BI, etc.)
+
+### Expected Deliverables:
+- `/construction/data_analytics/logical_design.md` - Complete logical design document
+- Architecture diagrams and component specifications
+- Container and deployment architecture design
+- API specifications and interface contracts
+- Database schema and data architecture design
+- Security and monitoring architecture specifications
+- Implementation guidance and development roadmap
+
+---
+**Status**: ⏳ READY TO START - Awaiting your review, technology stack preferences, and approval to begin logical design
+
+
+---
+
+## Domain Model Design Plan - Unit 2: Performance Management Service
+
+### Phase 1: Domain Analysis & Understanding
+- [x] Analyze all user stories (US-014 through US-026) to identify core domain concepts
+- [x] Map business processes and workflows (review lifecycle, feedback flow, coaching flow)
+- [x] Identify domain invariants and business rules
+- [x] Define bounded context boundaries and integration points with other units
+
+### Phase 2: Aggregate Identification
+- [x] Identify aggregate roots based on transactional consistency boundaries
+- [x] Define aggregate boundaries for Review Management domain
+- [x] Define aggregate boundaries for Feedback & Recognition domain
+- [x] Define aggregate boundaries for Coaching & Development domain
+- [x] Document lifecycle and state transitions for each aggregate
+
+### Phase 3: Entity & Value Object Design
+- [x] Design entities within each aggregate (with identity and lifecycle)
+- [x] Design value objects for immutable concepts (ratings, scores, dates, etc.)
+- [x] Define entity relationships and navigation patterns
+- [x] Ensure proper encapsulation and invariant protection
+
+### Phase 4: Domain Events Design
+- [x] Identify significant business events that other parts of the system care about
+- [x] Design domain events for review lifecycle (created, submitted, completed, calibrated)
+- [x] Design domain events for feedback and recognition activities
+- [x] Design domain events for coaching sessions and resource usage
+- [x] Define event payload structures and metadata
+
+### Phase 5: Domain Services & Policies
+- [x] Identify operations that don't naturally belong to a single entity
+- [x] Design domain services for complex calculations (scoring algorithms, calibration logic)
+- [x] Define business policies (review validation rules, feedback constraints, recognition limits)
+- [x] Document service contracts and responsibilities
+
+### Phase 6: Repository Interfaces
+- [x] Define repository interfaces for each aggregate root
+- [x] Specify query methods needed for business operations
+- [x] Define persistence requirements and data access patterns
+- [x] Document repository contracts (no implementation details)
+
+### Phase 7: Integration Points & Anti-Corruption Layer
+- [x] Define integration contracts with KPI Management Service (consume KPI data)
+- [x] Define integration contracts with Data & Analytics Service (provide performance insights)
+- [x] Design anti-corruption layer for external integrations (Slack/Teams)
+- [x] Document data transformation and mapping requirements
+
+### Phase 8: Documentation & Validation
+- [x] Create comprehensive domain model documentation in `/construction/unit2_performance_management/domain_model.md`
+- [x] Include UML-style diagrams (textual representation) for aggregates and relationships
+- [x] Document all tactical DDD patterns used
+- [x] Add examples and scenarios for clarity
+- [x] Review completeness against all user stories
+
+### Notes & Clarifications Needed:
+- **Calibration Process**: Need clarification on whether calibration sessions should be part of the Review aggregate or a separate aggregate. This affects transactional boundaries. (Awaiting your input)
+- **Recognition Anonymity**: US-021 mentions anonymous recognition but also "same team limitations" - need clarification on how to enforce team boundaries for anonymous recognition. (Awaiting your input)
+- **AI-Generated Content**: For US-024 (AI-generated coaching questions), should the AI service be modeled as a domain service or external integration? (Awaiting your input)
+- **Slack/Teams Integration**: Should bot interactions be modeled within the domain or kept purely as infrastructure concerns? (Awaiting your input)
+
+---
+
+
+### Design Decisions Made:
+- **Calibration Process**: ✅ Modeled as part of ReviewCycle aggregate for transactional consistency
+- **Recognition Anonymity**: ✅ Giver ID stored internally for limit enforcement while maintaining external anonymity
+- **AI-Generated Content**: ✅ Modeled as external integration via Anti-Corruption Layer
+- **Slack/Teams Integration**: ✅ Handled through ACL adapters to protect domain model
+
+### Deliverables:
+✅ `/construction/unit2_performance_management/domain_model.md` (2,471 lines - Full version with all 13 user stories)
+✅ `/construction/unit2_performance_management/domain_model_workshop.md` (Compressed 1-day workshop version)
+✅ `/construction/unit2_performance_management/verification_report.md` (Comprehensive validation)
+
+### Workshop Version Scope (1-Day Implementation):
+**User Stories:** 4 essential stories (US-016, US-017, US-019, US-020)
+**Aggregates:** 2 (ReviewCycle, FeedbackRecord)
+**Duration:** 8 hours (1 day)
+**Focus:** Core review and feedback features only
+**Excluded:** Templates, calibration, recognition, coaching (can be added incrementally)
+
+---
+**Status**: ✅ DOMAIN MODEL DESIGN COMPLETED - Both full and workshop versions ready
