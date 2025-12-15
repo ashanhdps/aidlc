@@ -237,7 +237,7 @@ A digital platform that helps organizations set, track, and evaluate employee go
 
 **US-017: Provide KPI-Specific Feedback**
 - **As a** Supervisor
-- **I want to** provide real-time feedback tied to specific KPI performance
+- **I want to** provide real-time feedback tied to specific KPI performance and suggest training material for improvement of KPI
 - **So that** employees receive timely recognition and coaching
 
 **Acceptance Criteria:**
