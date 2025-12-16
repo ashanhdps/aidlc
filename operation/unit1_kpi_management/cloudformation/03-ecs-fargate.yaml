@@ -1,0 +1,336 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cost-optimized ECS Fargate infrastructure for KPI Management Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: kpi-management
+    Description: Project name for resource naming
+
+  ImageUri:
+    Type: String
+    Description: ECR image URI for the application
+    Default: 'nginx:latest'  # Placeholder until real image is built
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ProjectName}-${Environment}-cluster'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT  # Use spot instances for cost savings
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 1
+          Base: 0
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled  # Disable to save cost
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-cluster'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ECS Task Execution Role
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-ecs-execution-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: 
+                  - !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-db-secret-arn'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-ecs-execution-role'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ECS Task Role
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-${Environment}-ecs-task-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ApplicationPermissions
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: 
+                  - !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-event-queue-arn'
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource: 
+                  - !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-notification-topic-arn'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 
+                  - !Sub 
+                    - '${LogGroupArn}:*'
+                    - LogGroupArn: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/ecs/${ProjectName}-${Environment}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-ecs-task-role'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ECS Task Definition
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${ProjectName}-${Environment}-task'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256  # Minimum CPU for cost optimization
+      Memory: 512  # Minimum memory for cost optimization
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub '${ProjectName}-app'
+          Image: !Ref ImageUri
+          PortMappings:
+            - ContainerPort: 8088
+              Protocol: tcp
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: production
+            - Name: SERVER_PORT
+              Value: '8088'
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: SQS_QUEUE_URL
+              Value: !ImportValue 
+                Fn::Sub: '${ProjectName}-${Environment}-event-queue-url'
+            - Name: SNS_TOPIC_ARN
+              Value: !ImportValue 
+                Fn::Sub: '${ProjectName}-${Environment}-notification-topic-arn'
+          Secrets:
+            - Name: DATABASE_URL
+              ValueFrom: !Sub 
+                - '${SecretArn}:url::'
+                - SecretArn: !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-db-secret-arn'
+            - Name: DATABASE_USERNAME
+              ValueFrom: !Sub 
+                - '${SecretArn}:username::'
+                - SecretArn: !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-db-secret-arn'
+            - Name: DATABASE_PASSWORD
+              ValueFrom: !Sub 
+                - '${SecretArn}:password::'
+                - SecretArn: !ImportValue 
+                    Fn::Sub: '${ProjectName}-${Environment}-db-secret-arn'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !ImportValue 
+                Fn::Sub: '${ProjectName}-${Environment}-log-group-name'
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - 'curl -f http://localhost:8088/api/v1/actuator/health || exit 1'
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-task'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-alb'
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-public-subnet-1-id'
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-public-subnet-2-id'
+      SecurityGroups:
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-alb-sg-id'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-alb'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Target Group
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-tg'
+      Port: 8088
+      Protocol: HTTP
+      VpcId: !ImportValue 
+        Fn::Sub: '${ProjectName}-${Environment}-vpc-id'
+      TargetType: ip
+      HealthCheckPath: /api/v1/actuator/health
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: 200
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-tg'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ALB Listener
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  # ECS Service
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: !Sub '${ProjectName}-${Environment}-service'
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ECSTaskDefinition
+      DesiredCount: 1  # Single instance for cost optimization
+      LaunchType: FARGATE
+      PlatformVersion: LATEST
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !ImportValue 
+              Fn::Sub: '${ProjectName}-${Environment}-ecs-sg-id'
+          Subnets:
+            - !ImportValue 
+              Fn::Sub: '${ProjectName}-${Environment}-private-subnet-1-id'
+            - !ImportValue 
+              Fn::Sub: '${ProjectName}-${Environment}-private-subnet-2-id'
+      LoadBalancers:
+        - ContainerName: !Sub '${ProjectName}-app'
+          ContainerPort: 8088
+          TargetGroupArn: !Ref TargetGroup
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      # Auto Scaling for 50-60 users
+      ServiceTags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-service'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Auto Scaling Target
+  ServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 3  # Maximum 3 instances for cost control
+      MinCapacity: 1  # Minimum 1 instance
+      ResourceId: !Sub 'service/${ECSCluster}/${ECSService.Name}'
+      RoleARN: !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService'
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # Auto Scaling Policy
+  ServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-${Environment}-scaling-policy'
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref ServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        TargetValue: 70.0  # Scale when CPU > 70%
+        ScaleOutCooldown: 300
+        ScaleInCooldown: 300
+
+Outputs:
+  ECSClusterName:
+    Description: ECS Cluster Name
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-ecs-cluster-name'
+
+  ECSServiceName:
+    Description: ECS Service Name
+    Value: !GetAtt ECSService.Name
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-ecs-service-name'
+
+  LoadBalancerDNS:
+    Description: Application Load Balancer DNS Name
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-alb-dns'
+
+  LoadBalancerUrl:
+    Description: Application Load Balancer URL
+    Value: !Sub 'http://${ApplicationLoadBalancer.DNSName}'
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-app-url'
+
+  TargetGroupArn:
+    Description: Target Group ARN
+    Value: !Ref TargetGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-target-group-arn'

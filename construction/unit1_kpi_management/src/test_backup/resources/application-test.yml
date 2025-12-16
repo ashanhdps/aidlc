@@ -1,0 +1,64 @@
+spring:
+  profiles:
+    active: test
+  
+  # In-memory H2 database for testing
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  # JPA configuration for testing
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+        
+  # Disable DynamoDB for tests
+  autoconfigure:
+    exclude:
+      - com.company.kpi.infrastructure.config.DynamoDBConfig
+
+# Test-specific logging
+logging:
+  level:
+    com.company.kpi: DEBUG
+    org.springframework.test: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+# Test configuration
+test:
+  data:
+    cleanup: true
+    initialization: true
+  performance:
+    max-response-time: 2000  # 2 seconds max response time
+    concurrent-users: 60     # 50-60 concurrent users for load testing
+  security:
+    penetration-testing: true
+    
+# Disable security for some tests
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+        
+# Mock external services
+external:
+  services:
+    ai-service:
+      enabled: false
+      mock: true
+    notification-service:
+      enabled: false
+      mock: true
+    user-management-service:
+      enabled: false
+      mock: true

@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: kpi-management-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}  # Default to local, override with environment variable
+  
+  security:
+    user:
+      name: ${ADMIN_USERNAME:admin}
+      password: ${ADMIN_PASSWORD:admin123}
+      roles: ADMIN
+
+server:
+  port: 8088
+  servlet:
+    context-path: /api/v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.company.kpi: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# AWS Configuration
+aws:
+  region: us-east-1
+  dynamodb:
+    endpoint: http://localhost:8000  # For local DynamoDB
+    table-prefix: kpi-management-
+    
+# Application Configuration
+app:
+  database:
+    type: ${DATABASE_TYPE:sqlite}  # Options: sqlite, h2, dynamodb
+  kpi:
+    default-weight-validation: flexible
+    max-assignments-per-employee: 10
+    cascade-timeout-seconds: 30
+  demo:
+    initialize-data: ${INITIALIZE_DEMO_DATA:true}
+    admin-user: admin
+    sample-employees: 5
+    use-local-dynamodb: ${USE_LOCAL_DYNAMODB:true}
+    simulate-api-calls: ${SIMULATE_API_CALLS:true}
+  third-party:
+    salesforce:
+      url: https://api.salesforce.com
+      token: ${SALESFORCE_TOKEN:demo-token}
+    survey:
+      url: https://api.surveymonkey.com
+      token: ${SURVEY_TOKEN:demo-token}
+    project-management:
+      url: https://api.projectmanagement.com
+      token: ${PROJECT_MGMT_TOKEN:demo-token}
+    marketing-analytics:
+      url: https://api.marketinganalytics.com
+      token: ${MARKETING_TOKEN:demo-token}

@@ -1,0 +1,28 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "Environment",
+      "ParameterValue": "production"
+    },
+    {
+      "ParameterKey": "ProjectName", 
+      "ParameterValue": "kpi-management"
+    },
+    {
+      "ParameterKey": "DatabaseUsername",
+      "ParameterValue": "kpi_admin"
+    },
+    {
+      "ParameterKey": "DatabasePassword",
+      "ParameterValue": "REPLACE_WITH_SECURE_PASSWORD"
+    },
+    {
+      "ParameterKey": "ImageUri",
+      "ParameterValue": "REPLACE_WITH_ECR_IMAGE_URI"
+    },
+    {
+      "ParameterKey": "NotificationEmail",
+      "ParameterValue": "admin@company.com"
+    }
+  ]
+}

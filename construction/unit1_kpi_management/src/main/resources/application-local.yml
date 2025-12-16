@@ -1,0 +1,44 @@
+# Local development profile with SQLite
+spring:
+  datasource:
+    url: jdbc:sqlite:kpi-management.db
+    driver-class-name: org.sqlite.JDBC
+    username: ""
+    password: ""
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+# Database Configuration
+app:
+  database:
+    type: sqlite  # Options: sqlite, h2, dynamodb
+  demo:
+    initialize-data: true
+    use-local-dynamodb: false
+    simulate-api-calls: true
+
+# Logging for development
+logging:
+  level:
+    com.company.kpi: DEBUG
+    org.springframework.security: INFO
+    org.sqlite: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+
+# Development server settings
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1

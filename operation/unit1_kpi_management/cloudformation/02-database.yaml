@@ -1,0 +1,233 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cost-optimized database infrastructure for KPI Management Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: kpi-management
+    Description: Project name for resource naming
+
+  DatabaseUsername:
+    Type: String
+    Default: kpi_admin
+    Description: Database master username
+    NoEcho: true
+
+  DatabasePassword:
+    Type: String
+    Description: Database master password
+    NoEcho: true
+    MinLength: 8
+    MaxLength: 128
+    AllowedPattern: '[a-zA-Z0-9!@#$%^&*()_+=-]+'
+    ConstraintDescription: Must contain only alphanumeric characters and special characters
+
+Resources:
+  # Database Subnet Group
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Sub '${ProjectName}-${Environment}-db-subnet-group'
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-private-subnet-1-id'
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-private-subnet-2-id'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-db-subnet-group'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Database Parameter Group for cost optimization
+  DatabaseParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Family: postgres15
+      Description: Parameter group for KPI Management PostgreSQL database
+      Parameters:
+        # Cost optimization parameters
+        shared_preload_libraries: ''
+        log_statement: 'none'
+        log_min_duration_statement: 1000
+        # Performance parameters for small instance
+        max_connections: 100
+        shared_buffers: '{DBInstanceClassMemory/32768}'
+        effective_cache_size: '{DBInstanceClassMemory/16384}'
+        work_mem: '4MB'
+        maintenance_work_mem: '64MB'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-db-params'
+
+  # RDS PostgreSQL Instance (t3.micro for cost optimization)
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-${Environment}-db'
+      DBInstanceClass: db.t3.micro  # Smallest available instance
+      Engine: postgres
+      EngineVersion: '15.4'
+      AllocatedStorage: 20  # Minimum storage
+      StorageType: gp2  # General Purpose SSD (cheaper than gp3)
+      StorageEncrypted: true
+      
+      # Database configuration
+      DBName: kpi_management
+      MasterUsername: !Ref DatabaseUsername
+      MasterUserPassword: !Ref DatabasePassword
+      
+      # Network configuration
+      VPCSecurityGroups:
+        - !ImportValue 
+          Fn::Sub: '${ProjectName}-${Environment}-db-sg-id'
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DBParameterGroupName: !Ref DatabaseParameterGroup
+      
+      # Backup configuration (minimal for cost)
+      BackupRetentionPeriod: 7  # Minimum for automated backups
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+      
+      # Cost optimization settings
+      MultiAZ: false  # Single AZ to reduce cost
+      PubliclyAccessible: false
+      AutoMinorVersionUpgrade: true
+      DeletionProtection: false  # Allow deletion for cost management
+      
+      # Monitoring (basic only)
+      MonitoringInterval: 0  # Disable enhanced monitoring to save cost
+      EnablePerformanceInsights: false  # Disable to save cost
+      
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-database'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Secrets Manager for database credentials
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}-db-credentials'
+      Description: Database credentials for KPI Management Service
+      SecretString: !Sub |
+        {
+          "username": "${DatabaseUsername}",
+          "password": "${DatabasePassword}",
+          "engine": "postgres",
+          "host": "${DatabaseInstance.Endpoint.Address}",
+          "port": ${DatabaseInstance.Endpoint.Port},
+          "dbname": "kpi_management",
+          "url": "jdbc:postgresql://${DatabaseInstance.Endpoint.Address}:${DatabaseInstance.Endpoint.Port}/kpi_management"
+        }
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-db-secret'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # SQS Queue for event messaging (cost-effective alternative to Kafka)
+  EventQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-${Environment}-events'
+      VisibilityTimeoutSeconds: 300
+      MessageRetentionPeriod: 1209600  # 14 days
+      ReceiveMessageWaitTimeSeconds: 20  # Long polling for cost efficiency
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EventDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-events'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Dead Letter Queue for failed messages
+  EventDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-${Environment}-events-dlq'
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-events-dlq'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # SNS Topic for notifications
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${ProjectName}-${Environment}-notifications'
+      DisplayName: KPI Management Notifications
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-notifications'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # CloudWatch Log Group for application logs
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/ecs/${ProjectName}-${Environment}'
+      RetentionInDays: 7  # Short retention for cost optimization
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-logs'
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  DatabaseEndpoint:
+    Description: RDS PostgreSQL endpoint
+    Value: !GetAtt DatabaseInstance.Endpoint.Address
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-endpoint'
+
+  DatabasePort:
+    Description: RDS PostgreSQL port
+    Value: !GetAtt DatabaseInstance.Endpoint.Port
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-port'
+
+  DatabaseSecretArn:
+    Description: Database credentials secret ARN
+    Value: !Ref DatabaseSecret
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-secret-arn'
+
+  EventQueueUrl:
+    Description: SQS Event Queue URL
+    Value: !Ref EventQueue
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-event-queue-url'
+
+  EventQueueArn:
+    Description: SQS Event Queue ARN
+    Value: !GetAtt EventQueue.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-event-queue-arn'
+
+  NotificationTopicArn:
+    Description: SNS Notification Topic ARN
+    Value: !Ref NotificationTopic
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-notification-topic-arn'
+
+  ApplicationLogGroupName:
+    Description: CloudWatch Log Group Name
+    Value: !Ref ApplicationLogGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-log-group-name'

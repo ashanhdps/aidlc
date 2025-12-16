@@ -1,0 +1,58 @@
+# Demo profile configuration for DynamoDB Local
+
+# Database Configuration for Demo (DynamoDB Local)
+app:
+  database:
+    type: dynamodb  # Use DynamoDB for demo as per README
+  demo:
+    initialize-data: true
+    use-local-dynamodb: true
+    simulate-api-calls: true
+
+# AWS Configuration for Local DynamoDB
+aws:
+  region: us-east-1
+  dynamodb:
+    endpoint: http://localhost:8000  # Local DynamoDB endpoint
+    table-prefix: kpi-management-
+
+# Security configuration for demo users
+spring:
+  security:
+    user:
+      name: admin
+      password: admin123
+      roles: ADMIN
+
+# Server configuration
+server:
+  port: 8088
+  servlet:
+    context-path: /api/v1
+
+# Logging for demo
+logging:
+  level:
+    com.company.kpi: INFO
+    org.springframework.security: WARN
+    software.amazon.awssdk: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Monitoring endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

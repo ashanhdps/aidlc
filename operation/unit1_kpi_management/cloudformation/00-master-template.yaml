@@ -1,0 +1,246 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Master template for KPI Management Service - Cost-optimized deployment'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    Description: Environment name
+    AllowedValues:
+      - production
+      - staging
+      - development
+
+  ProjectName:
+    Type: String
+    Default: kpi-management
+    Description: Project name for resource naming
+    AllowedPattern: '[a-z0-9-]+'
+    ConstraintDescription: Must contain only lowercase letters, numbers, and hyphens
+
+  DatabaseUsername:
+    Type: String
+    Default: kpi_admin
+    Description: Database master username
+    NoEcho: true
+    MinLength: 4
+    MaxLength: 16
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters
+
+  DatabasePassword:
+    Type: String
+    Description: Database master password (minimum 8 characters)
+    NoEcho: true
+    MinLength: 8
+    MaxLength: 128
+    AllowedPattern: '[a-zA-Z0-9!@#$%^&*()_+=-]+'
+    ConstraintDescription: Must contain only alphanumeric characters and special characters
+
+  ImageUri:
+    Type: String
+    Description: ECR image URI for the application
+    Default: 'nginx:latest'
+
+  NotificationEmail:
+    Type: String
+    Description: Email address for notifications (optional)
+    Default: ''
+
+Conditions:
+  HasNotificationEmail: !Not [!Equals [!Ref NotificationEmail, '']]
+
+Resources:
+  # VPC and Networking Infrastructure
+  NetworkingStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3BucketName}/cloudformation/01-vpc-networking.yaml'
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-networking'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Component
+          Value: networking
+
+  # Database and Messaging Infrastructure
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkingStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3BucketName}/cloudformation/02-database.yaml'
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        DatabaseUsername: !Ref DatabaseUsername
+        DatabasePassword: !Ref DatabasePassword
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-database'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Component
+          Value: database
+
+  # ECS Fargate Infrastructure
+  ECSStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: DatabaseStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/${S3BucketName}/cloudformation/03-ecs-fargate.yaml'
+      Parameters:
+        Environment: !Ref Environment
+        ProjectName: !Ref ProjectName
+        ImageUri: !Ref ImageUri
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-ecs'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Component
+          Value: compute
+
+  # SNS Subscription for notifications (if email provided)
+  NotificationSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasNotificationEmail
+    Properties:
+      Protocol: email
+      TopicArn: !GetAtt DatabaseStack.Outputs.NotificationTopicArn
+      Endpoint: !Ref NotificationEmail
+
+  # CloudWatch Alarms for basic monitoring
+  DatabaseCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-database-cpu-high'
+      AlarmDescription: Database CPU utilization is too high
+      MetricName: CPUUtilization
+      Namespace: AWS/RDS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: DBInstanceIdentifier
+          Value: !Sub '${ProjectName}-${Environment}-db'
+      AlarmActions:
+        - !GetAtt DatabaseStack.Outputs.NotificationTopicArn
+
+  ECSServiceCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-ecs-cpu-high'
+      AlarmDescription: ECS service CPU utilization is too high
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !GetAtt ECSStack.Outputs.ECSServiceName
+        - Name: ClusterName
+          Value: !GetAtt ECSStack.Outputs.ECSClusterName
+      AlarmActions:
+        - !GetAtt DatabaseStack.Outputs.NotificationTopicArn
+
+  # S3 Bucket for CloudFormation templates (referenced but not created here)
+  S3BucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /kpi-management/deployment/s3-bucket
+    Description: S3 bucket name for CloudFormation templates
+
+Outputs:
+  ApplicationUrl:
+    Description: Application Load Balancer URL
+    Value: !GetAtt ECSStack.Outputs.LoadBalancerUrl
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-application-url'
+
+  DatabaseEndpoint:
+    Description: RDS PostgreSQL endpoint
+    Value: !GetAtt DatabaseStack.Outputs.DatabaseEndpoint
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-database-endpoint'
+
+  ECSClusterName:
+    Description: ECS Cluster Name
+    Value: !GetAtt ECSStack.Outputs.ECSClusterName
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-cluster-name'
+
+  EventQueueUrl:
+    Description: SQS Event Queue URL
+    Value: !GetAtt DatabaseStack.Outputs.EventQueueUrl
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-queue-url'
+
+  # Cost Estimation (approximate monthly costs)
+  EstimatedMonthlyCost:
+    Description: Estimated monthly cost breakdown (USD)
+    Value: !Sub |
+      RDS t3.micro: $12-15/month
+      ECS Fargate (1 task): $8-12/month
+      ALB: $16-20/month
+      NAT Gateway: $32-45/month
+      Other services: $5-10/month
+      Total: $73-102/month
+      
+      Note: Actual costs may vary based on usage patterns.
+      Consider using AWS Cost Calculator for precise estimates.
+
+  CostOptimizationNotes:
+    Description: Cost optimization recommendations
+    Value: !Sub |
+      Current setup optimized for minimal cost:
+      - Single AZ RDS (no Multi-AZ)
+      - Fargate Spot instances
+      - Single NAT Gateway
+      - Minimal monitoring
+      - Short log retention
+      
+      To reduce costs further:
+      - Use RDS Aurora Serverless v2
+      - Consider Lambda instead of Fargate
+      - Use CloudFront for static content
+      - Implement scheduled scaling
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: Database Configuration
+        Parameters:
+          - DatabaseUsername
+          - DatabasePassword
+      - Label:
+          default: Application Configuration
+        Parameters:
+          - ImageUri
+          - NotificationEmail
+    ParameterLabels:
+      ProjectName:
+        default: Project Name
+      Environment:
+        default: Environment
+      DatabaseUsername:
+        default: Database Username
+      DatabasePassword:
+        default: Database Password
+      ImageUri:
+        default: Container Image URI
+      NotificationEmail:
+        default: Notification Email

@@ -1,0 +1,174 @@
+# Docker Compose for KPI Management Service Local Development
+# This setup mirrors the AWS production environment for local testing
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (mirrors RDS)
+  postgres:
+    image: postgres:15.4
+    container_name: kpi-postgres
+    environment:
+      POSTGRES_DB: kpi_management
+      POSTGRES_USER: kpi_admin
+      POSTGRES_PASSWORD: kpi_password_123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/01-create-schema.sql:/docker-entrypoint-initdb.d/01-create-schema.sql
+      - ../database/02-seed-data.sql:/docker-entrypoint-initdb.d/02-seed-data.sql
+    networks:
+      - kpi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kpi_admin -d kpi_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache (mirrors ElastiCache)
+  redis:
+    image: redis:7.2-alpine
+    container_name: kpi-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - kpi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # LocalStack for AWS services simulation (SQS, SNS, Secrets Manager)
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: kpi-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs,sns,secretsmanager,logs
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - LOCALSTACK_HOST=localstack
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - localstack_data:/var/lib/localstack
+    networks:
+      - kpi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # KPI Management Application
+  kpi-app:
+    build:
+      context: ../../construction/unit1_kpi_management
+      dockerfile: ../../operation/unit1_kpi_management/docker/Dockerfile
+    container_name: kpi-management-app
+    ports:
+      - "8088:8088"
+    environment:
+      # Spring profiles
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8088
+      
+      # Database configuration
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/kpi_management
+      - DATABASE_USERNAME=kpi_admin
+      - DATABASE_PASSWORD=kpi_password_123
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/kpi_management
+      - SPRING_DATASOURCE_USERNAME=kpi_admin
+      - SPRING_DATASOURCE_PASSWORD=kpi_password_123
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      
+      # JPA/Hibernate configuration
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+      - SPRING_JPA_SHOW_SQL=false
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      
+      # Redis configuration
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - SPRING_REDIS_TIMEOUT=2000ms
+      
+      # AWS LocalStack configuration
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - SQS_QUEUE_URL=http://localstack:4566/000000000000/kpi-management-events
+      - SNS_TOPIC_ARN=arn:aws:sns:us-east-1:000000000000:kpi-management-notifications
+      
+      # Application configuration
+      - APP_DATABASE_TYPE=postgresql
+      - APP_DEMO_INITIALIZE_DATA=true
+      - APP_DEMO_USE_LOCAL_DYNAMODB=false
+      
+      # Logging configuration
+      - LOGGING_LEVEL_COM_COMPANY_KPI=DEBUG
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=INFO
+      - LOGGING_LEVEL_ORG_HIBERNATE_SQL=WARN
+      
+      # JVM options for development
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC
+      
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - kpi-network
+    volumes:
+      - app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/api/v1/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # Nginx reverse proxy (mirrors ALB)
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: kpi-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - kpi-app
+    networks:
+      - kpi-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Networks
+networks:
+  kpi-network:
+    driver: bridge
+    name: kpi-management-network
+
+# Volumes for data persistence
+volumes:
+  postgres_data:
+    name: kpi-postgres-data
+  redis_data:
+    name: kpi-redis-data
+  localstack_data:
+    name: kpi-localstack-data
+  app_logs:
+    name: kpi-app-logs

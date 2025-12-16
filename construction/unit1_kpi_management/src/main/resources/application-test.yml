@@ -1,0 +1,31 @@
+# Test profile with H2 in-memory database
+
+# Database Configuration
+app:
+  database:
+    type: h2  # H2 for fast testing
+  demo:
+    initialize-data: true
+    use-local-dynamodb: false
+    simulate-api-calls: true
+
+# Test logging
+logging:
+  level:
+    com.company.kpi: DEBUG
+    org.springframework.security: WARN
+    org.h2: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Test server settings
+server:
+  port: 0  # Random port for testing (keeps random for tests)
+
+# Security (minimal for testing)
+spring:
+  security:
+    user:
+      name: testuser
+      password: testpass
+      roles: ADMIN
