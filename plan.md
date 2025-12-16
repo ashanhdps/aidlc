@@ -1166,3 +1166,315 @@ Create a comprehensive logical design for Unit 3: Data & Analytics Service using
 
 ---
 **Status**: ✅ DOMAIN MODEL DESIGN COMPLETED - Both full and workshop versions ready
+
+
+---
+
+## Logical Design Plan - Unit 2: Performance Management Service
+
+### Overview
+Create a comprehensive logical design for Unit 2: Performance Management Service using containerized architecture with ECS Fargate. This design will translate the domain model into implementable software architecture, focusing on scalability, maintainability, and clear integration patterns with other services.
+
+### Prerequisites
+✅ Domain model completed at `/construction/unit2_performance_management/domain_model.md`
+✅ Integration contracts defined at `/inception/units/integration_contract.md`
+✅ User stories documented at `/inception/units/unit2_performance_management.md`
+
+### Phase 1: Architecture Foundation & Analysis
+- [ ] **Step 1.1: Analyze Domain Model and Requirements**
+  - Review domain model aggregates, entities, and value objects
+  - Map domain components to architectural layers
+  - Identify key architectural drivers from user stories
+  - Document quality attributes (scalability, performance, security)
+
+- [ ] **Step 1.2: Define Architecture Principles and Constraints**
+  - Establish containerized architecture principles for ECS Fargate
+  - Define clean architecture and hexagonal architecture patterns
+  - Document technology stack decisions and rationale
+  - Establish coding standards and design patterns
+  - **Note: Need confirmation on preferred technology stack (Java/Spring Boot, .NET Core, Node.js, Python, etc.)**
+
+- [ ] **Step 1.3: Design High-Level System Architecture**
+  - Define service boundaries and component structure
+  - Design container architecture for ECS Fargate deployment
+  - Establish layered architecture (Presentation, Application, Domain, Infrastructure)
+  - Document component interaction patterns and data flow
+
+### Phase 2: Domain Layer Design
+- [ ] **Step 2.1: Map Aggregates to Implementation Structure**
+  - Design ReviewCycle aggregate implementation structure
+  - Design FeedbackRecord aggregate implementation structure
+  - Design ReviewTemplate aggregate implementation structure (if not workshop version)
+  - Design Recognition aggregate implementation structure (if not workshop version)
+  - Design CoachingResource aggregate implementation structure (if not workshop version)
+  - Document aggregate root interfaces and behaviors
+
+- [ ] **Step 2.2: Design Entity and Value Object Implementation**
+  - Define entity implementation patterns with identity management
+  - Design value object implementation with immutability guarantees
+  - Specify validation rules and business rule enforcement
+  - Document entity lifecycle management and state transitions
+
+- [ ] **Step 2.3: Design Domain Services Implementation**
+  - Design PerformanceScoreCalculationService implementation
+  - Design CalibrationService implementation (if not workshop version)
+  - Design FeedbackAnalysisService implementation (if not workshop version)
+  - Document service interfaces and dependency injection patterns
+
+- [ ] **Step 2.4: Design Domain Events Architecture**
+  - Define domain event structure and metadata
+  - Design event publishing mechanisms within aggregates
+  - Specify event ordering and consistency guarantees
+  - Document event payload schemas and versioning strategy
+
+### Phase 3: Application Layer Design
+- [ ] **Step 3.1: Design Application Services and Use Cases**
+  - Design review cycle management application services
+  - Design feedback management application services
+  - Design coaching and recognition application services (if not workshop version)
+  - Map user stories to application service operations
+  - Document transaction boundaries and orchestration patterns
+
+- [ ] **Step 3.2: Design Command and Query Handlers (CQRS)**
+  - Define command objects for all write operations
+  - Design query objects for all read operations
+  - Implement command validation and authorization logic
+  - Design query optimization and caching strategies
+  - **Note: Need confirmation on full CQRS implementation vs simplified approach**
+
+- [ ] **Step 3.3: Design DTOs and API Models**
+  - Define request/response DTOs for all API endpoints
+  - Design data mapping strategies between domain and DTOs
+  - Specify validation rules for API inputs
+  - Document API versioning and backward compatibility approach
+
+- [ ] **Step 3.4: Design Integration Application Services**
+  - Design Anti-Corruption Layer for KPI Management Service integration
+  - Design event publishers for Data & Analytics Service integration
+  - Design adapters for Slack/Teams integration (if not workshop version)
+  - Document integration patterns and error handling strategies
+
+### Phase 4: Infrastructure Layer Design
+- [ ] **Step 4.1: Design Data Persistence Layer**
+  - Define database schema design based on aggregates
+  - Design repository implementations for each aggregate
+  - Specify ORM mapping strategies and configurations
+  - Design database migration and versioning approach
+  - **Note: Need confirmation on database technology (PostgreSQL, MySQL, SQL Server, etc.)**
+
+- [ ] **Step 4.2: Design Event Store and Event Bus**
+  - Define event store schema and persistence strategy
+  - Design event bus architecture for domain event publishing
+  - Specify event subscription and handler registration patterns
+  - Design event replay and recovery mechanisms
+  - **Note: Need confirmation on event infrastructure (AWS EventBridge, SNS/SQS, Kafka, etc.)**
+
+- [ ] **Step 4.3: Design External Service Integration**
+  - Design HTTP clients for KPI Management Service API calls
+  - Design event consumers for external system events
+  - Implement circuit breaker and retry patterns
+  - Design service discovery and configuration management
+
+- [ ] **Step 4.4: Design Caching Strategy**
+  - Define caching layers and cache invalidation strategies
+  - Design distributed caching for frequently accessed data
+  - Specify cache warming and preloading strategies
+  - Document cache consistency and synchronization patterns
+  - **Note: Need confirmation on caching technology (Redis, ElastiCache, in-memory, etc.)**
+
+### Phase 5: API and Presentation Layer Design
+- [ ] **Step 5.1: Design REST API Architecture**
+  - Define RESTful endpoint structure based on integration contracts
+  - Design API routing and controller organization
+  - Specify HTTP methods, status codes, and error responses
+  - Document API authentication and authorization patterns
+
+- [ ] **Step 5.2: Design API Security and Authorization**
+  - Define JWT token validation and claims extraction
+  - Design role-based access control (RBAC) implementation
+  - Specify endpoint-level authorization rules
+  - Document security headers and CORS configuration
+
+- [ ] **Step 5.3: Design API Rate Limiting and Throttling**
+  - Define rate limiting policies per endpoint and user
+  - Design throttling mechanisms for resource protection
+  - Specify rate limit headers and error responses
+  - Document monitoring and alerting for rate limit violations
+
+- [ ] **Step 5.4: Design API Documentation and Contracts**
+  - Define OpenAPI/Swagger specification structure
+  - Design API documentation generation approach
+  - Specify contract testing strategies
+  - Document API versioning and deprecation policies
+
+### Phase 6: Cross-Cutting Concerns Design
+- [ ] **Step 6.1: Design Logging and Monitoring Architecture**
+  - Define structured logging format and log levels
+  - Design distributed tracing and correlation ID propagation
+  - Specify application performance monitoring (APM) integration
+  - Document log aggregation and analysis strategies
+  - **Note: Need confirmation on monitoring stack (CloudWatch, ELK, Prometheus/Grafana, etc.)**
+
+- [ ] **Step 6.2: Design Error Handling and Resilience**
+  - Define exception handling hierarchy and strategies
+  - Design circuit breaker patterns for external dependencies
+  - Specify retry policies and timeout configurations
+  - Document graceful degradation and fallback mechanisms
+
+- [ ] **Step 6.3: Design Configuration Management**
+  - Define configuration sources and precedence
+  - Design environment-specific configuration strategies
+  - Specify secrets management and encryption
+  - Document feature flags and dynamic configuration
+
+- [ ] **Step 6.4: Design Audit Logging and Compliance**
+  - Define audit event structure and storage
+  - Design audit trail for sensitive operations
+  - Specify data retention and archival policies
+  - Document compliance requirements (GDPR, SOC2, etc.)
+
+### Phase 7: Scalability and Performance Design
+- [ ] **Step 7.1: Design Horizontal Scaling Strategy**
+  - Define stateless service design patterns
+  - Design ECS Fargate task scaling policies
+  - Specify auto-scaling triggers and metrics
+  - Document load balancing and service discovery
+
+- [ ] **Step 7.2: Design Database Scaling and Optimization**
+  - Define database connection pooling strategies
+  - Design read replica configuration for query optimization
+  - Specify database indexing and query optimization
+  - Document database sharding strategies (if needed)
+
+- [ ] **Step 7.3: Design Asynchronous Processing**
+  - Define background job processing architecture
+  - Design message queue integration for async operations
+  - Specify job scheduling and retry mechanisms
+  - Document workflow orchestration for complex processes
+
+- [ ] **Step 7.4: Design Performance Optimization**
+  - Define query optimization and N+1 prevention strategies
+  - Design batch processing for bulk operations
+  - Specify lazy loading and eager loading patterns
+  - Document performance testing and benchmarking approach
+
+### Phase 8: Deployment and DevOps Design
+- [ ] **Step 8.1: Design ECS Fargate Container Architecture**
+  - Define Dockerfile and container image structure
+  - Design multi-stage build process for optimization
+  - Specify container resource allocation (CPU, memory)
+  - Document container security scanning and hardening
+
+- [ ] **Step 8.2: Design ECS Task and Service Configuration**
+  - Define ECS task definition structure
+  - Design service discovery and load balancer integration
+  - Specify health check and readiness probe configuration
+  - Document rolling deployment and blue-green strategies
+
+- [ ] **Step 8.3: Design Networking and Security Groups**
+  - Define VPC and subnet configuration
+  - Design security group rules and network policies
+  - Specify service mesh integration (if applicable)
+  - Document network isolation and segmentation
+
+- [ ] **Step 8.4: Design CI/CD Pipeline**
+  - Define continuous integration build and test stages
+  - Design automated deployment pipeline
+  - Specify environment promotion strategies
+  - Document rollback and disaster recovery procedures
+
+### Phase 9: Testing Strategy Design
+- [ ] **Step 9.1: Design Unit Testing Strategy**
+  - Define unit testing patterns for domain logic
+  - Design test fixtures and mock strategies
+  - Specify code coverage requirements and metrics
+  - Document testing frameworks and tools
+
+- [ ] **Step 9.2: Design Integration Testing Strategy**
+  - Define integration test scenarios for API endpoints
+  - Design database integration testing approach
+  - Specify external service mocking and stubbing
+  - Document test data management strategies
+
+- [ ] **Step 9.3: Design Contract Testing**
+  - Define consumer-driven contract tests with other services
+  - Design contract verification and validation
+  - Specify contract versioning and evolution
+  - Document contract testing tools and frameworks
+
+- [ ] **Step 9.4: Design Performance and Load Testing**
+  - Define performance testing scenarios and metrics
+  - Design load testing strategies and tools
+  - Specify performance benchmarks and SLAs
+  - Document stress testing and capacity planning
+
+### Phase 10: Documentation and Implementation Guidance
+- [ ] **Step 10.1: Create Comprehensive Logical Design Document**
+  - Document all architectural decisions and rationale
+  - Include detailed component interaction diagrams
+  - Specify implementation guidelines for each layer
+  - Create sequence diagrams for key workflows
+
+- [ ] **Step 10.2: Create Database Schema Design**
+  - Document complete database schema with relationships
+  - Include table definitions, indexes, and constraints
+  - Specify data migration and seeding strategies
+  - Document database backup and recovery procedures
+
+- [ ] **Step 10.3: Create API Specification Document**
+  - Document all REST API endpoints with examples
+  - Include request/response schemas and validation rules
+  - Specify authentication and authorization requirements
+  - Create API usage examples and integration guides
+
+- [ ] **Step 10.4: Create Implementation Roadmap**
+  - Define development phases and milestones
+  - Specify team structure and responsibilities
+  - Create task breakdown and estimation guidance
+  - Document risk mitigation strategies
+
+- [ ] **Step 10.5: Validate Design Against Requirements**
+  - Ensure all user stories are supported by the design
+  - Verify integration contracts are properly implemented
+  - Validate scalability and performance requirements
+  - Confirm security and compliance requirements are met
+
+### Technology Stack Decisions ✅ CONFIRMED
+
+1. **Technology Stack**: ✅ Java 17+ with Spring Boot 3.x
+2. **Database Technology**: ✅ PostgreSQL 15+ with JPA/Hibernate
+3. **Event Infrastructure**: ✅ Apache Kafka
+4. **Caching Technology**: ✅ Redis
+5. **Monitoring Stack**: ✅ Prometheus with Grafana
+6. **Container Platform**: ✅ Docker + Kubernetes (ECS Fargate deployment)
+7. **Cloud Platform**: ✅ AWS
+8. **API Style**: ✅ REST only (no GraphQL)
+9. **CQRS Implementation**: Simplified approach (to be determined during design)
+10. **File Storage**: AWS S3 (for evidence uploads if needed)
+11. **Scope**: ✅ Workshop Version (4 user stories: US-016, US-017, US-019, US-020)
+
+### Success Criteria
+- [ ] Complete logical design covers all domain model components
+- [ ] All integration contracts are properly designed
+- [ ] Scalability and performance requirements are addressed
+- [ ] Security and compliance requirements are met
+- [ ] Clear implementation guidance is provided
+- [ ] All architectural decisions are documented and justified
+- [ ] Design supports both workshop and full versions
+
+### Expected Deliverables
+- `/construction/unit2_performance_management/logical_design.md` - Comprehensive logical design document
+- Architectural diagrams and component interaction models
+- Database schema design and data access patterns
+- API specifications and integration contracts
+- ECS Fargate deployment architecture
+- Implementation guidelines and development standards
+- Testing strategy and quality assurance approach
+
+---
+**Status**: ✅ COMPLETED - Logical design document finished and ready for implementation
+**Focus**: Unit 2: Performance Management Service
+**Scope**: Workshop Version (4 user stories: US-016, US-017, US-019, US-020)
+**Technology**: Java 17+ | Spring Boot 3.x | PostgreSQL 15+ | Kafka | Redis | Prometheus/Grafana | Docker/K8s | AWS
+**Deliverable**: `/construction/unit2_performance_management/logical_design.md` (Complete - 4,700+ lines)
+**Date Completed**: December 16, 2025
