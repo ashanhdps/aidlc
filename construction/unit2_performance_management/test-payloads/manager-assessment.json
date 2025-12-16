@@ -1,0 +1,23 @@
+{
+  "kpiScores": [
+    {
+      "kpiId": "kpi-code-quality",
+      "ratingValue": 4,
+      "achievementPercentage": 88.0,
+      "comment": "Consistently delivers quality code with good test coverage"
+    },
+    {
+      "kpiId": "kpi-communication",
+      "ratingValue": 5,
+      "achievementPercentage": 92.0,
+      "comment": "Excellent communicator and team player. Documentation has improved significantly."
+    },
+    {
+      "kpiId": "kpi-teamwork",
+      "ratingValue": 4,
+      "achievementPercentage": 85.0,
+      "comment": "Great collaboration with team members and willingness to help others"
+    }
+  ],
+  "overallComments": "Strong performer with excellent technical and soft skills. Shows leadership potential through mentoring activities. Keep up the great work!"
+}

@@ -3372,11 +3372,12 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 ### Docker Containerization
 
 **Dockerfile**:
+
 ```dockerfile
 # Multi-stage build for optimized image size
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY pom.xml .
+COPY src/pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
