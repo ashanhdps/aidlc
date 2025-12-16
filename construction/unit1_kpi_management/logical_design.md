@@ -9,7 +9,7 @@ This document provides a comprehensive logical design for the KPI Management Ser
 - **Event Store**: Apache Kafka
 - **Caching**: Redis
 - **Monitoring**: Prometheus + Grafana
-- **Container Platform**: Docker + Kubernetes
+- **Container Platform**: Docker + AWS ECS Fargate
 - **Cloud Platform**: AWS
 - **API Style**: REST only
 
@@ -888,7 +888,23 @@ public class KPIApplicationService {
 
 ## Deployment and DevOps Design
 
-### Containerization (Docker + Kubernetes)
+### Containerization (Docker + AWS ECS Fargate)
+
+#### ECS Fargate Architecture Benefits
+**Serverless Container Management**:
+- **No Infrastructure Management**: No EC2 instances to manage or patch
+- **Automatic Scaling**: Built-in auto-scaling based on CPU/memory utilization
+- **Pay-per-Use**: Only pay for the compute resources your containers actually use
+- **High Availability**: Automatic distribution across multiple AZs
+- **Security**: Isolated compute environment per task
+- **Integration**: Native integration with AWS services (ALB, CloudWatch, Secrets Manager)
+
+**Fargate vs Kubernetes Advantages**:
+- **Reduced Operational Overhead**: No cluster management or node provisioning
+- **Faster Deployment**: Simplified deployment process without Kubernetes complexity
+- **Cost Optimization**: No idle EC2 instances, pay only for running tasks
+- **AWS Native**: Better integration with AWS security and monitoring services
+- **Simplified Networking**: VPC networking without complex CNI configurations
 
 #### Docker Configuration
 **Dockerfile**:
@@ -915,62 +931,105 @@ EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```
 
-#### Kubernetes Deployment
-**Deployment Manifest**:
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kpi-management-service
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: kpi-management-service
-  template:
-    metadata:
-      labels:
-        app: kpi-management-service
-    spec:
-      containers:
-      - name: kpi-management-service
-        image: company/kpi-management-service:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: database-secret
-              key: url
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
+#### ECS Fargate Task Definition
+**Task Definition (JSON)**:
+```json
+{
+  "family": "kpi-management-service",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::account:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::account:role/kpiManagementTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "kpi-management-service",
+      "image": "account.dkr.ecr.region.amazonaws.com/kpi-management-service:latest",
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SPRING_PROFILES_ACTIVE",
+          "value": "production"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:region:account:secret:kpi-db-credentials"
+        }
+      ],
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/actuator/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/kpi-management-service",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+```
+
+**ECS Service Configuration**:
+```json
+{
+  "serviceName": "kpi-management-service",
+  "cluster": "kpi-management-cluster",
+  "taskDefinition": "kpi-management-service:1",
+  "desiredCount": 3,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-12345678",
+        "subnet-87654321"
+      ],
+      "securityGroups": [
+        "sg-kpi-management"
+      ],
+      "assignPublicIp": "DISABLED"
+    }
+  },
+  "loadBalancers": [
+    {
+      "targetGroupArn": "arn:aws:elasticloadbalancing:region:account:targetgroup/kpi-management-tg",
+      "containerName": "kpi-management-service",
+      "containerPort": 8080
+    }
+  ],
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 50,
+    "deploymentCircuitBreaker": {
+      "enable": true,
+      "rollback": true
+    }
+  }
+}
 ```
 
 ### AWS Infrastructure Design
 
 #### AWS Services Architecture
 **Core Services**:
-- **EKS (Elastic Kubernetes Service)** - Container orchestration
+- **ECS Fargate** - Serverless container orchestration
 - **RDS PostgreSQL** - Primary database with Multi-AZ deployment
 - **ElastiCache Redis** - Caching layer
 - **MSK (Managed Streaming for Kafka)** - Event streaming
@@ -978,24 +1037,49 @@ spec:
 - **Route 53** - DNS management
 - **CloudWatch** - Monitoring and logging
 - **Secrets Manager** - Secrets and configuration management
+- **ECR (Elastic Container Registry)** - Container image repository
 
 **Infrastructure as Code (Terraform)**:
 ```hcl
-# EKS Cluster
-resource "aws_eks_cluster" "kpi_management" {
-  name     = "kpi-management-cluster"
-  role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.28"
+# ECS Cluster
+resource "aws_ecs_cluster" "kpi_management" {
+  name = "kpi-management-cluster"
+  
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+  
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight           = 1
+  }
+}
 
-  vpc_config {
-    subnet_ids = [
-      aws_subnet.private_a.id,
-      aws_subnet.private_b.id,
-      aws_subnet.public_a.id,
-      aws_subnet.public_b.id
-    ]
-    endpoint_private_access = true
-    endpoint_public_access  = true
+# ECS Service
+resource "aws_ecs_service" "kpi_management_service" {
+  name            = "kpi-management-service"
+  cluster         = aws_ecs_cluster.kpi_management.id
+  task_definition = aws_ecs_task_definition.kpi_management.arn
+  desired_count   = 3
+  launch_type     = "FARGATE"
+  
+  network_configuration {
+    subnets         = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+    security_groups = [aws_security_group.ecs_service.id]
+  }
+  
+  load_balancer {
+    target_group_arn = aws_lb_target_group.kpi_management.arn
+    container_name   = "kpi-management-service"
+    container_port   = 8080
+  }
+  
+  deployment_configuration {
+    maximum_percent         = 200
+    minimum_healthy_percent = 50
   }
 }
 
@@ -1072,10 +1156,10 @@ resource "aws_db_instance" "kpi_database" {
 - [ ] Add code quality gates and static analysis
 
 ### Phase 7: Deployment and DevOps (Weeks 13-14)
-- [ ] Create Docker containers and Kubernetes manifests
-- [ ] Set up AWS infrastructure with Terraform
-- [ ] Implement CI/CD pipelines
-- [ ] Set up monitoring and alerting in production
+- [ ] Create Docker containers and ECS Fargate task definitions
+- [ ] Set up AWS infrastructure with Terraform (ECS, ALB, RDS, ElastiCache)
+- [ ] Implement CI/CD pipelines with CodePipeline and CodeBuild
+- [ ] Set up monitoring and alerting with CloudWatch and Prometheus
 - [ ] Conduct end-to-end testing in staging environment
 
 ### Phase 8: Production Readiness (Weeks 15-16)
