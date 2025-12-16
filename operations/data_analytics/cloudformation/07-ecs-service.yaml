@@ -1,0 +1,324 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Service and Task Definition for Data Analytics Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: data-analytics
+    Description: Project name for resource naming
+  
+  EcsTaskCpu:
+    Type: String
+    Default: '256'
+    Description: ECS task CPU units
+    AllowedValues: ['256', '512', '1024', '2048', '4096']
+  
+  EcsTaskMemory:
+    Type: String
+    Default: '512'
+    Description: ECS task memory in MB
+    AllowedValues: ['512', '1024', '2048', '4096', '8192']
+  
+  EcsDesiredCount:
+    Type: Number
+    Default: 1
+    Description: Desired number of ECS tasks
+  
+  EcsMinCapacity:
+    Type: Number
+    Default: 1
+    Description: Minimum number of ECS tasks
+  
+  EcsMaxCapacity:
+    Type: Number
+    Default: 2
+    Description: Maximum number of ECS tasks
+  
+  ContainerImage:
+    Type: String
+    Default: data-analytics-service:latest
+    Description: Container image name and tag
+  
+  ContainerPort:
+    Type: Number
+    Default: 8080
+    Description: Container port
+
+Resources:
+  # ECS Task Definition
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub '${ProjectName}-${Environment}'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: !Ref EcsTaskCpu
+      Memory: !Ref EcsTaskMemory
+      ExecutionRoleArn:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-ecs-execution-role-arn'
+      TaskRoleArn:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-ecs-task-role-arn'
+      ContainerDefinitions:
+        - Name: !Sub '${ProjectName}-${Environment}'
+          Image: !Sub
+            - '${ECRUri}:${ImageTag}'
+            - ECRUri:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-ecr-uri'
+              ImageTag: !Ref ContainerImage
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+          Environment:
+            - Name: SPRING_PROFILES_ACTIVE
+              Value: test
+            - Name: DB_HOST
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-db-endpoint'
+            - Name: DB_PORT
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-db-port'
+            - Name: DB_NAME
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-db-name'
+            - Name: DB_USERNAME
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-db-username'
+            - Name: DB_PASSWORD
+              Value: TempPassword123!  # In production, use AWS Secrets Manager
+            - Name: REDIS_HOST
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-redis-endpoint'
+            - Name: REDIS_PORT
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-redis-port'
+            - Name: AWS_REGION
+              Value: !Ref AWS::Region
+            - Name: S3_BUCKET_NAME
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-reports-bucket-name'
+            - Name: SQS_QUEUE_URL
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-reports-queue-url'
+            - Name: SQS_DLQ_URL
+              Value:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-reports-dlq-url'
+            - Name: JWT_SECRET
+              Value: mySecretKey123456789012345678901234567890  # In production, use AWS Secrets Manager
+            - Name: CLOUDWATCH_METRICS_ENABLED
+              Value: 'true'
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group:
+                Fn::ImportValue: !Sub '${ProjectName}-${Environment}-log-group-name'
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - !Sub 'curl -f http://localhost:${ContainerPort}/api/v1/data-analytics/actuator/health || exit 1'
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
+          Essential: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-task-definition'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ECS Service
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListenerRule
+    Properties:
+      ServiceName: !Sub '${ProjectName}-${Environment}-service'
+      Cluster:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-cluster-name'
+      TaskDefinition: !Ref ECSTaskDefinition
+      LaunchType: FARGATE
+      DesiredCount: !Ref EcsDesiredCount
+      PlatformVersion: LATEST
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-ecs-sg-id'
+          Subnets:
+            - Fn::Select:
+              - 0
+              - Fn::Split:
+                - ','
+                - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+            - Fn::Select:
+              - 1
+              - Fn::Split:
+                - ','
+                - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - ContainerName: !Sub '${ProjectName}-${Environment}'
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn:
+            Fn::ImportValue: !Sub '${ProjectName}-${Environment}-target-group-arn'
+      HealthCheckGracePeriodSeconds: 120
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      EnableExecuteCommand: false  # Disabled for security in test environment
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-service'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Service Discovery Service
+  ServiceDiscoveryService:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}'
+      NamespaceId:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-service-discovery-namespace-id'
+      DnsConfig:
+        DnsRecords:
+          - Type: A
+            TTL: 60
+        NamespaceId:
+          Fn::ImportValue: !Sub '${ProjectName}-${Environment}-service-discovery-namespace-id'
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-service-discovery'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Auto Scaling Target
+  ECSAutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: !Ref EcsMaxCapacity
+      MinCapacity: !Ref EcsMinCapacity
+      ResourceId: !Sub 'service/${ProjectName}-${Environment}-cluster/${ProjectName}-${Environment}-service'
+      RoleARN:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-ecs-autoscaling-role-arn'
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # Auto Scaling Policy - Scale Up
+  ECSAutoScalingPolicyUp:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-${Environment}-scale-up'
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ECSAutoScalingTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 300
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalLowerBound: 0
+            ScalingAdjustment: 1
+
+  # Auto Scaling Policy - Scale Down
+  ECSAutoScalingPolicyDown:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-${Environment}-scale-down'
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ECSAutoScalingTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: ChangeInCapacity
+        Cooldown: 300
+        MetricAggregationType: Average
+        StepAdjustments:
+          - MetricIntervalUpperBound: 0
+            ScalingAdjustment: -1
+
+  # CloudWatch Alarm - High CPU
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-cpu-high'
+      AlarmDescription: Scale up on high CPU
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 70
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub '${ProjectName}-${Environment}-service'
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub '${ProjectName}-${Environment}-cluster-name'
+      AlarmActions:
+        - !Ref ECSAutoScalingPolicyUp
+
+  # CloudWatch Alarm - Low CPU
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${ProjectName}-${Environment}-cpu-low'
+      AlarmDescription: Scale down on low CPU
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 20
+      ComparisonOperator: LessThanThreshold
+      Dimensions:
+        - Name: ServiceName
+          Value: !Sub '${ProjectName}-${Environment}-service'
+        - Name: ClusterName
+          Value:
+            Fn::ImportValue: !Sub '${ProjectName}-${Environment}-cluster-name'
+      AlarmActions:
+        - !Ref ECSAutoScalingPolicyDown
+
+  # ALB Listener Rule (referenced by ECS Service)
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-alb-listener-arn'
+      Priority: 100
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '/api/v1/data-analytics/*'
+      Actions:
+        - Type: forward
+          TargetGroupArn:
+            Fn::ImportValue: !Sub '${ProjectName}-${Environment}-target-group-arn'
+
+Outputs:
+  ECSServiceName:
+    Description: ECS Service Name
+    Value: !Ref ECSService
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-service-name'
+
+  ECSServiceArn:
+    Description: ECS Service ARN
+    Value: !Ref ECSService
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-service-arn'
+
+  ECSTaskDefinitionArn:
+    Description: ECS Task Definition ARN
+    Value: !Ref ECSTaskDefinition
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-task-definition-arn'

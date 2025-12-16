@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'RDS PostgreSQL database for Data Analytics Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: data-analytics
+    Description: Project name for resource naming
+  
+  DatabaseInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: RDS instance class
+    AllowedValues:
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+  
+  DatabaseAllocatedStorage:
+    Type: Number
+    Default: 20
+    MinValue: 20
+    MaxValue: 100
+    Description: Database allocated storage in GB
+  
+  DatabaseEngine:
+    Type: String
+    Default: postgres
+    Description: Database engine
+  
+  DatabaseEngineVersion:
+    Type: String
+    Default: '15.4'
+    Description: PostgreSQL engine version
+  
+  DatabaseName:
+    Type: String
+    Default: dataanalytics
+    Description: Database name
+  
+  DatabaseUsername:
+    Type: String
+    Default: dbadmin
+    Description: Database master username
+  
+  DatabasePassword:
+    Type: String
+    Default: TempPassword123!
+    NoEcho: true
+    MinLength: 8
+    Description: Database master password
+
+Resources:
+  # DB Subnet Group
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Sub '${ProjectName}-${Environment}-db-subnet-group'
+      DBSubnetGroupDescription: Subnet group for RDS database
+      SubnetIds:
+        - Fn::Select:
+          - 0
+          - Fn::Split:
+            - ','
+            - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+        - Fn::Select:
+          - 1
+          - Fn::Split:
+            - ','
+            - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-db-subnet-group'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # DB Parameter Group
+  DatabaseParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      DBParameterGroupName: !Sub '${ProjectName}-${Environment}-db-params'
+      Description: Parameter group for PostgreSQL database
+      Family: postgres15
+      Parameters:
+        shared_preload_libraries: pg_stat_statements
+        log_statement: all
+        log_min_duration_statement: 1000
+        log_connections: 1
+        log_disconnections: 1
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-db-params'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # RDS Instance
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete  # For test environment
+    Properties:
+      DBInstanceIdentifier: !Sub '${ProjectName}-${Environment}-db'
+      DBInstanceClass: !Ref DatabaseInstanceClass
+      Engine: !Ref DatabaseEngine
+      EngineVersion: !Ref DatabaseEngineVersion
+      DBName: !Ref DatabaseName
+      MasterUsername: !Ref DatabaseUsername
+      MasterUserPassword: !Ref DatabasePassword
+      AllocatedStorage: !Ref DatabaseAllocatedStorage
+      StorageType: gp2
+      StorageEncrypted: true
+      
+      # Network and Security
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-db-sg-id'
+      PubliclyAccessible: false
+      
+      # Parameter and Option Groups
+      DBParameterGroupName: !Ref DatabaseParameterGroup
+      
+      # Backup and Maintenance (minimal for test)
+      BackupRetentionPeriod: 1  # 1 day for test environment
+      DeleteAutomatedBackups: true
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+      
+      # Monitoring
+      MonitoringInterval: 0  # Disable enhanced monitoring for cost savings
+      EnablePerformanceInsights: false  # Disable for cost savings
+      
+      # Deletion Protection
+      DeletionProtection: false  # Allow deletion for test environment
+      
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-database'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+Outputs:
+  DatabaseEndpoint:
+    Description: RDS database endpoint
+    Value: !GetAtt DatabaseInstance.Endpoint.Address
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-endpoint'
+
+  DatabasePort:
+    Description: RDS database port
+    Value: !GetAtt DatabaseInstance.Endpoint.Port
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-port'
+
+  DatabaseName:
+    Description: Database name
+    Value: !Ref DatabaseName
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-name'
+
+  DatabaseUsername:
+    Description: Database username
+    Value: !Ref DatabaseUsername
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-db-username'

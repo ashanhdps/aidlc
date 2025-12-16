@@ -1,0 +1,164 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 bucket and SQS queues for Data Analytics Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: data-analytics
+    Description: Project name for resource naming
+  
+  S3BucketName:
+    Type: String
+    Default: data-analytics-reports-test-ap-southeast-1
+    Description: S3 bucket name for report storage
+  
+  SqsQueueName:
+    Type: String
+    Default: data-analytics-reports-queue
+    Description: SQS queue name for report processing
+
+Resources:
+  # S3 Bucket for Report Storage
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${S3BucketName}-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReports
+            Status: Enabled
+            ExpirationInDays: 30  # Delete reports after 30 days
+          - Id: TransitionToIA
+            Status: Enabled
+            TransitionInDays: 7
+            StorageClass: STANDARD_IA
+      VersioningConfiguration:
+        Status: Suspended  # No versioning for test environment
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-reports-bucket'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # S3 Bucket Policy
+  ReportsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReportsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyInsecureConnections
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !Sub '${ReportsBucket}/*'
+              - !Ref ReportsBucket
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+
+  # SQS Queue for Report Processing
+  ReportsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-${Environment}-${SqsQueueName}'
+      VisibilityTimeoutSeconds: 300  # 5 minutes
+      MessageRetentionPeriod: 1209600  # 14 days
+      ReceiveMessageWaitTimeSeconds: 20  # Long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ReportsDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-reports-queue'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # Dead Letter Queue for Failed Messages
+  ReportsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-${Environment}-${SqsQueueName}-dlq'
+      MessageRetentionPeriod: 1209600  # 14 days
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-reports-dlq'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # SQS Queue Policy (if needed for cross-service access)
+  ReportsQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref ReportsQueue
+      PolicyDocument:
+        Statement:
+          - Sid: AllowECSTaskAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action:
+              - sqs:SendMessage
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Resource: !GetAtt ReportsQueue.Arn
+
+Outputs:
+  ReportsBucketName:
+    Description: S3 bucket name for reports
+    Value: !Ref ReportsBucket
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-bucket-name'
+
+  ReportsBucketArn:
+    Description: S3 bucket ARN for reports
+    Value: !GetAtt ReportsBucket.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-bucket-arn'
+
+  ReportsQueueUrl:
+    Description: SQS queue URL for report processing
+    Value: !Ref ReportsQueue
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-queue-url'
+
+  ReportsQueueArn:
+    Description: SQS queue ARN for report processing
+    Value: !GetAtt ReportsQueue.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-queue-arn'
+
+  ReportsDeadLetterQueueUrl:
+    Description: SQS dead letter queue URL
+    Value: !Ref ReportsDeadLetterQueue
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-dlq-url'
+
+  ReportsDeadLetterQueueArn:
+    Description: SQS dead letter queue ARN
+    Value: !GetAtt ReportsDeadLetterQueue.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-reports-dlq-arn'

@@ -1,0 +1,139 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1/data-analytics
+
+spring:
+  application:
+    name: data-analytics-service
+  
+  profiles:
+    active: test
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:dataanalytics}
+    username: ${DB_USERNAME:dbadmin}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 300000
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+  
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:ap-southeast-1}
+  s3:
+    bucket-name: ${S3_BUCKET_NAME:data-analytics-reports-test}
+    reports-prefix: reports/
+  sqs:
+    reports-queue-url: ${SQS_QUEUE_URL:}
+    reports-dlq-url: ${SQS_DLQ_URL:}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:mySecretKey123456789012345678901234567890}
+  expiration: 86400000 # 24 hours in milliseconds
+
+# File Storage Configuration
+file:
+  storage:
+    reports-path: ${REPORTS_PATH:/tmp/reports}
+    max-file-size: 10MB
+
+# Logging Configuration
+logging:
+  level:
+    com.company.dataanalytics: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+    metrics:
+      enabled: true
+  metrics:
+    export:
+      cloudwatch:
+        namespace: data-analytics/test
+        enabled: ${CLOUDWATCH_METRICS_ENABLED:true}
+        step: 1m
+    tags:
+      application: ${spring.application.name}
+      environment: test
+
+# Application Configuration
+app:
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allowed-headers: "*"
+    allow-credentials: false
+  
+  security:
+    jwt:
+      enabled: ${JWT_ENABLED:true}
+    
+  cache:
+    ttl:
+      user-data: 1800  # 30 minutes
+      report-templates: 3600  # 1 hour
+      performance-data: 900  # 15 minutes
+  
+  async:
+    core-pool-size: 2
+    max-pool-size: 5
+    queue-capacity: 100
+    thread-name-prefix: "DataAnalytics-"
+  
+  report:
+    generation:
+      timeout-minutes: 10
+      max-concurrent: 3
+    
+  performance:
+    data:
+      batch-size: 1000
+      max-days-history: 365
