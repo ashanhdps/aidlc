@@ -11,7 +11,7 @@ This document provides a comprehensive logical design for the Performance Manage
 
 ## Technology Stack
 - **Programming Language**: Java 17+ with Spring Boot 3.x
-- **Database**: PostgreSQL 15+ with JPA/Hibernate
+- **Database**: AWS DynamoDB (NoSQL)
 - **Event Store**: Apache Kafka
 - **Caching**: Redis
 - **Monitoring**: Prometheus + Grafana
@@ -140,13 +140,13 @@ com.company.performance.application
 **Purpose**: Implements technical concerns and external integrations
 
 **Components**:
-- **Repository Implementations**: JPA repositories with Hibernate
-- **Database Entities**: JPA entity mappings
+- **Repository Implementations**: DynamoDB repositories with AWS SDK
+- **Database Entities**: DynamoDB entity mappings with annotations
 - **Event Publishers**: Kafka producers for domain events
 - **Event Consumers**: Kafka consumers for external events
 - **External Service Clients**: REST clients for KPI Management Service
-- **Configuration**: Database, Kafka, Redis, Security configurations
-- **Database Migrations**: Flyway or Liquibase scripts
+- **Configuration**: DynamoDB, Kafka, Redis, Security configurations
+- **Table Definitions**: DynamoDB table schemas and GSI configurations
 
 **Dependencies**: Domain and Application Layers
 
@@ -165,9 +165,10 @@ com.company.performance.infrastructure
 │   │   ├── AssessmentScoreEntity.java
 │   │   ├── FeedbackRecordEntity.java
 │   │   └── FeedbackResponseEntity.java
-│   └── jpa
-│       ├── JpaReviewCycleRepository.java
-│       └── JpaFeedbackRecordRepository.java
+│   └── dynamodb
+│       ├── DynamoDBConfig.java
+│       ├── DynamoDBMapper.java
+│       └── DynamoDBTableInitializer.java
 ├── messaging
 │   ├── kafka
 │   │   ├── producer
@@ -267,24 +268,31 @@ com.company.performance.api
 
 **Transactional Outbox Pattern Implementation**:
 
-1. **Outbox Table Schema**:
-```sql
-CREATE TABLE event_outbox (
-    id UUID PRIMARY KEY,
-    aggregate_type VARCHAR(100) NOT NULL,
-    aggregate_id UUID NOT NULL,
-    event_type VARCHAR(100) NOT NULL,
-    event_payload JSONB NOT NULL,
-    event_metadata JSONB,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    published_at TIMESTAMP,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    retry_count INT DEFAULT 0,
-    error_message TEXT
-);
+1. **Outbox Table Schema (DynamoDB)**:
+```
+Table Name: event_outbox
+Partition Key: id (String - UUID)
+Sort Key: created_at (Number - Unix timestamp)
 
-CREATE INDEX idx_outbox_status ON event_outbox(status, created_at);
-CREATE INDEX idx_outbox_aggregate ON event_outbox(aggregate_type, aggregate_id);
+Attributes:
+- id (String, PK)
+- created_at (Number, SK)
+- aggregate_type (String)
+- aggregate_id (String)
+- event_type (String)
+- event_payload (Map)
+- event_metadata (Map)
+- published_at (Number, optional)
+- status (String) - PENDING, PUBLISHED, FAILED
+- retry_count (Number)
+- error_message (String, optional)
+- ttl (Number) - For automatic cleanup after 90 days
+
+Global Secondary Index (GSI):
+- GSI Name: status-created_at-index
+- Partition Key: status (String)
+- Sort Key: created_at (Number)
+- Projection: ALL
 ```
 
 2. **Event Publishing Flow**:
@@ -2237,282 +2245,464 @@ public class CircuitBreakerConfig {
 
 ## Infrastructure Layer Implementation Design
 
-### Database Schema Design
+### DynamoDB Table Design
 
-#### PostgreSQL Schema
+#### DynamoDB Single-Table Design Pattern
 
-**review_cycles Table**:
-```sql
-CREATE TABLE review_cycles (
-    id UUID PRIMARY KEY,
-    cycle_name VARCHAR(255) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    version INT NOT NULL DEFAULT 0,
-    CONSTRAINT chk_dates CHECK (end_date >= start_date),
-    CONSTRAINT chk_status CHECK (status IN ('ACTIVE', 'IN_PROGRESS', 'COMPLETED'))
-);
+**Table 1: ReviewCycles**
 
-CREATE INDEX idx_review_cycles_status ON review_cycles(status);
-CREATE INDEX idx_review_cycles_dates ON review_cycles(start_date, end_date);
+```
+Table Name: ReviewCycles
+Partition Key: PK (String) = "CYCLE#{cycleId}"
+Sort Key: SK (String) = "METADATA" or "PARTICIPANT#{participantId}" or "PARTICIPANT#{participantId}#SELF" or "PARTICIPANT#{participantId}#MANAGER"
+
+Billing Mode: PAY_PER_REQUEST (On-Demand) or PROVISIONED
+Point-in-Time Recovery: Enabled
+Encryption: AWS-managed keys
+
+Item Types:
+
+1. Review Cycle Metadata:
+   PK: "CYCLE#{cycleId}"
+   SK: "METADATA"
+   EntityType: "ReviewCycle"
+   CycleId: (String)
+   CycleName: (String)
+   StartDate: (String, ISO-8601)
+   EndDate: (String, ISO-8601)
+   Status: (String) - ACTIVE, IN_PROGRESS, COMPLETED
+   CreatedAt: (Number, Unix timestamp)
+   UpdatedAt: (Number, Unix timestamp)
+   Version: (Number)
+   GSI1PK: "STATUS#{status}"
+   GSI1SK: "CYCLE#{startDate}"
+   
+2. Review Participant:
+   PK: "CYCLE#{cycleId}"
+   SK: "PARTICIPANT#{participantId}"
+   EntityType: "ReviewParticipant"
+   ParticipantId: (String)
+   EmployeeId: (String)
+   SupervisorId: (String)
+   Status: (String) - PENDING, SELF_ASSESSMENT_SUBMITTED, MANAGER_ASSESSMENT_SUBMITTED, COMPLETED
+   FinalScore: (Number, optional)
+   CreatedAt: (Number)
+   UpdatedAt: (Number)
+   GSI2PK: "EMPLOYEE#{employeeId}"
+   GSI2SK: "CYCLE#{cycleId}"
+   GSI3PK: "SUPERVISOR#{supervisorId}"
+   GSI3SK: "CYCLE#{cycleId}"
+
+3. Self-Assessment:
+   PK: "CYCLE#{cycleId}"
+   SK: "PARTICIPANT#{participantId}#SELF"
+   EntityType: "SelfAssessment"
+   AssessmentId: (String)
+   ParticipantId: (String)
+   SubmittedDate: (Number, Unix timestamp)
+   Comments: (String)
+   ExtraMileEfforts: (String)
+   KPIScores: (List of Maps)
+     - KPIId: (String)
+     - RatingValue: (Number, 1.0-5.0)
+     - AchievementPercentage: (Number, 0-100)
+     - Comment: (String)
+   CreatedAt: (Number)
+   UpdatedAt: (Number)
+
+4. Manager Assessment:
+   PK: "CYCLE#{cycleId}"
+   SK: "PARTICIPANT#{participantId}#MANAGER"
+   EntityType: "ManagerAssessment"
+   AssessmentId: (String)
+   ParticipantId: (String)
+   SubmittedDate: (Number, Unix timestamp)
+   OverallComments: (String)
+   KPIScores: (List of Maps)
+     - KPIId: (String)
+     - RatingValue: (Number, 1.0-5.0)
+     - AchievementPercentage: (Number, 0-100)
+     - Comment: (String)
+   CreatedAt: (Number)
+   UpdatedAt: (Number)
+
+Global Secondary Indexes:
+
+GSI1 - Query by Status and Date:
+  Name: StatusDateIndex
+  Partition Key: GSI1PK (String)
+  Sort Key: GSI1SK (String)
+  Projection: ALL
+  Purpose: Query cycles by status and date range
+
+GSI2 - Query by Employee:
+  Name: EmployeeIndex
+  Partition Key: GSI2PK (String)
+  Sort Key: GSI2SK (String)
+  Projection: ALL
+  Purpose: Query all cycles for an employee
+
+GSI3 - Query by Supervisor:
+  Name: SupervisorIndex
+  Partition Key: GSI3PK (String)
+  Sort Key: GSI3SK (String)
+  Projection: ALL
+  Purpose: Query all cycles for a supervisor
 ```
 
-**review_participants Table**:
-```sql
-CREATE TABLE review_participants (
-    id UUID PRIMARY KEY,
-    cycle_id UUID NOT NULL,
-    employee_id UUID NOT NULL,
-    supervisor_id UUID NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    final_score DECIMAL(3,2),
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_participant_cycle FOREIGN KEY (cycle_id) 
-        REFERENCES review_cycles(id) ON DELETE CASCADE,
-    CONSTRAINT chk_participant_status CHECK (status IN (
-        'PENDING',
-        'SELF_ASSESSMENT_SUBMITTED',
-        'MANAGER_ASSESSMENT_SUBMITTED',
-        'COMPLETED'
-    )),
-    CONSTRAINT chk_final_score CHECK (final_score >= 1.0 AND final_score <= 5.0)
-);
+**Table 2: FeedbackRecords**
 
-CREATE INDEX idx_participants_cycle ON review_participants(cycle_id);
-CREATE INDEX idx_participants_employee ON review_participants(employee_id);
-CREATE INDEX idx_participants_supervisor ON review_participants(supervisor_id);
-CREATE UNIQUE INDEX idx_participants_cycle_employee ON review_participants(cycle_id, employee_id);
+```
+Table Name: FeedbackRecords
+Partition Key: PK (String) = "FEEDBACK#{feedbackId}"
+Sort Key: SK (String) = "METADATA" or "RESPONSE#{responseId}"
+
+Billing Mode: PAY_PER_REQUEST (On-Demand)
+Point-in-Time Recovery: Enabled
+Encryption: AWS-managed keys
+
+Item Types:
+
+1. Feedback Metadata:
+   PK: "FEEDBACK#{feedbackId}"
+   SK: "METADATA"
+   EntityType: "FeedbackRecord"
+   FeedbackId: (String)
+   GiverId: (String)
+   ReceiverId: (String)
+   KPIId: (String)
+   KPIName: (String)
+   FeedbackType: (String) - POSITIVE, IMPROVEMENT
+   ContentText: (String)
+   Status: (String) - CREATED, ACKNOWLEDGED, RESPONDED, RESOLVED
+   CreatedDate: (Number, Unix timestamp)
+   UpdatedAt: (Number)
+   Version: (Number)
+   GSI1PK: "RECEIVER#{receiverId}"
+   GSI1SK: "FEEDBACK#{createdDate}"
+   GSI2PK: "GIVER#{giverId}"
+   GSI2SK: "FEEDBACK#{createdDate}"
+   GSI3PK: "KPI#{kpiId}"
+   GSI3SK: "FEEDBACK#{createdDate}"
+   GSI4PK: "STATUS#{status}"
+   GSI4SK: "RECEIVER#{receiverId}#DATE#{createdDate}"
+
+2. Feedback Response:
+   PK: "FEEDBACK#{feedbackId}"
+   SK: "RESPONSE#{responseId}"
+   EntityType: "FeedbackResponse"
+   ResponseId: (String)
+   FeedbackId: (String)
+   ResponderId: (String)
+   ResponseText: (String)
+   ResponseDate: (Number, Unix timestamp)
+   CreatedAt: (Number)
+
+Global Secondary Indexes:
+
+GSI1 - Query by Receiver:
+  Name: ReceiverIndex
+  Partition Key: GSI1PK (String)
+  Sort Key: GSI1SK (String)
+  Projection: ALL
+  Purpose: Query all feedback for a receiver
+
+GSI2 - Query by Giver:
+  Name: GiverIndex
+  Partition Key: GSI2PK (String)
+  Sort Key: GSI2SK (String)
+  Projection: ALL
+  Purpose: Query all feedback given by a user
+
+GSI3 - Query by KPI:
+  Name: KPIIndex
+  Partition Key: GSI3PK (String)
+  Sort Key: GSI3SK (String)
+  Projection: ALL
+  Purpose: Query all feedback for a specific KPI
+
+GSI4 - Query by Status and Receiver:
+  Name: StatusReceiverIndex
+  Partition Key: GSI4PK (String)
+  Sort Key: GSI4SK (String)
+  Projection: ALL
+  Purpose: Query unresolved feedback for a receiver
 ```
 
-**self_assessments Table**:
-```sql
-CREATE TABLE self_assessments (
-    id UUID PRIMARY KEY,
-    participant_id UUID NOT NULL,
-    submitted_date TIMESTAMP NOT NULL,
-    comments TEXT,
-    extra_mile_efforts TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_self_assessment_participant FOREIGN KEY (participant_id)
-        REFERENCES review_participants(id) ON DELETE CASCADE,
-    CONSTRAINT uq_self_assessment_participant UNIQUE (participant_id)
-);
+**Table 3: EventOutbox**
 
-CREATE INDEX idx_self_assessments_participant ON self_assessments(participant_id);
 ```
+Table Name: EventOutbox
+Partition Key: PK (String) = "OUTBOX#{id}"
+Sort Key: SK (Number) = createdAt (Unix timestamp)
 
-**manager_assessments Table**:
-```sql
-CREATE TABLE manager_assessments (
-    id UUID PRIMARY KEY,
-    participant_id UUID NOT NULL,
-    submitted_date TIMESTAMP NOT NULL,
-    overall_comments TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_manager_assessment_participant FOREIGN KEY (participant_id)
-        REFERENCES review_participants(id) ON DELETE CASCADE,
-    CONSTRAINT uq_manager_assessment_participant UNIQUE (participant_id)
-);
+Billing Mode: PAY_PER_REQUEST (On-Demand)
+Time to Live (TTL): Enabled on TTL attribute (90 days)
+Streams: Enabled (NEW_AND_OLD_IMAGES) for event processing
 
-CREATE INDEX idx_manager_assessments_participant ON manager_assessments(participant_id);
-```
+Attributes:
+  PK: (String, Partition Key)
+  SK: (Number, Sort Key)
+  Id: (String)
+  AggregateType: (String)
+  AggregateId: (String)
+  EventType: (String)
+  EventPayload: (Map)
+  EventMetadata: (Map)
+  CreatedAt: (Number, Unix timestamp)
+  PublishedAt: (Number, optional)
+  Status: (String) - PENDING, PUBLISHED, FAILED
+  RetryCount: (Number)
+  ErrorMessage: (String, optional)
+  TTL: (Number, Unix timestamp + 90 days)
+  GSI1PK: "STATUS#{status}"
+  GSI1SK: (Number) createdAt
 
-**assessment_scores Table**:
-```sql
-CREATE TABLE assessment_scores (
-    id UUID PRIMARY KEY,
-    assessment_id UUID NOT NULL,
-    assessment_type VARCHAR(20) NOT NULL,
-    kpi_id UUID NOT NULL,
-    rating_value DECIMAL(3,2) NOT NULL,
-    achievement_percentage DECIMAL(5,2) NOT NULL,
-    comment TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT chk_assessment_type CHECK (assessment_type IN ('SELF', 'MANAGER')),
-    CONSTRAINT chk_rating_value CHECK (rating_value >= 1.0 AND rating_value <= 5.0),
-    CONSTRAINT chk_achievement CHECK (achievement_percentage >= 0 AND achievement_percentage <= 100)
-);
+Global Secondary Index:
 
-CREATE INDEX idx_assessment_scores_assessment ON assessment_scores(assessment_id, assessment_type);
-CREATE INDEX idx_assessment_scores_kpi ON assessment_scores(kpi_id);
-```
-
-**feedback_records Table**:
-```sql
-CREATE TABLE feedback_records (
-    id UUID PRIMARY KEY,
-    giver_id UUID NOT NULL,
-    receiver_id UUID NOT NULL,
-    kpi_id UUID NOT NULL,
-    kpi_name VARCHAR(255) NOT NULL,
-    feedback_type VARCHAR(20) NOT NULL,
-    content_text TEXT NOT NULL,
-    status VARCHAR(50) NOT NULL,
-    created_date TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    version INT NOT NULL DEFAULT 0,
-    CONSTRAINT chk_feedback_type CHECK (feedback_type IN ('POSITIVE', 'IMPROVEMENT')),
-    CONSTRAINT chk_feedback_status CHECK (status IN (
-        'CREATED',
-        'ACKNOWLEDGED',
-        'RESPONDED',
-        'RESOLVED'
-    ))
-);
-
-CREATE INDEX idx_feedback_receiver ON feedback_records(receiver_id);
-CREATE INDEX idx_feedback_giver ON feedback_records(giver_id);
-CREATE INDEX idx_feedback_kpi ON feedback_records(kpi_id);
-CREATE INDEX idx_feedback_status ON feedback_records(status);
-CREATE INDEX idx_feedback_created_date ON feedback_records(created_date);
-```
-
-**feedback_responses Table**:
-```sql
-CREATE TABLE feedback_responses (
-    id UUID PRIMARY KEY,
-    feedback_id UUID NOT NULL,
-    responder_id UUID NOT NULL,
-    response_text TEXT NOT NULL,
-    response_date TIMESTAMP NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_response_feedback FOREIGN KEY (feedback_id)
-        REFERENCES feedback_records(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_feedback_responses_feedback ON feedback_responses(feedback_id);
-CREATE INDEX idx_feedback_responses_responder ON feedback_responses(responder_id);
-```
-
-**event_outbox Table** (for Transactional Outbox Pattern):
-```sql
-CREATE TABLE event_outbox (
-    id UUID PRIMARY KEY,
-    aggregate_type VARCHAR(100) NOT NULL,
-    aggregate_id UUID NOT NULL,
-    event_type VARCHAR(100) NOT NULL,
-    event_payload JSONB NOT NULL,
-    event_metadata JSONB,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    published_at TIMESTAMP,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    retry_count INT DEFAULT 0,
-    error_message TEXT,
-    CONSTRAINT chk_outbox_status CHECK (status IN ('PENDING', 'PUBLISHED', 'FAILED'))
-);
-
-CREATE INDEX idx_outbox_status ON event_outbox(status, created_at);
-CREATE INDEX idx_outbox_aggregate ON event_outbox(aggregate_type, aggregate_id);
+GSI1 - Query by Status:
+  Name: StatusIndex
+  Partition Key: GSI1PK (String)
+  Sort Key: GSI1SK (Number)
+  Projection: ALL
+  Purpose: Query pending events for publishing
 ```
 
 
-### JPA Entity Mappings
+### DynamoDB Entity Mappings (AWS SDK v2)
 
 #### ReviewCycleEntity
 
 ```java
-@Entity
-@Table(name = "review_cycles")
+@DynamoDbBean
 public class ReviewCycleEntity {
     
-    @Id
-    private UUID id;
-    
-    @Column(name = "cycle_name", nullable = false)
+    private String pk;  // "CYCLE#{cycleId}"
+    private String sk;  // "METADATA"
+    private String entityType;  // "ReviewCycle"
+    private String cycleId;
     private String cycleName;
-    
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
-    
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private ReviewCycleStatus status;
-    
-    @OneToMany(mappedBy = "cycle", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ReviewParticipantEntity> participants = new ArrayList<>();
-    
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-    
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-    
-    @Version
-    @Column(name = "version")
+    private String startDate;  // ISO-8601 format
+    private String endDate;    // ISO-8601 format
+    private String status;     // ACTIVE, IN_PROGRESS, COMPLETED
+    private Long createdAt;    // Unix timestamp
+    private Long updatedAt;    // Unix timestamp
     private Integer version;
     
-    @PrePersist
-    protected void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = Instant.now();
+    // GSI attributes
+    private String gsi1Pk;  // "STATUS#{status}"
+    private String gsi1Sk;  // "CYCLE#{startDate}"
+    
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPk() {
+        return pk;
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = Instant.now();
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSk() {
+        return sk;
     }
     
-    // Getters and setters
+    @DynamoDbAttribute("EntityType")
+    public String getEntityType() {
+        return entityType;
+    }
+    
+    @DynamoDbAttribute("CycleId")
+    public String getCycleId() {
+        return cycleId;
+    }
+    
+    @DynamoDbAttribute("CycleName")
+    public String getCycleName() {
+        return cycleName;
+    }
+    
+    @DynamoDbAttribute("StartDate")
+    public String getStartDate() {
+        return startDate;
+    }
+    
+    @DynamoDbAttribute("EndDate")
+    public String getEndDate() {
+        return endDate;
+    }
+    
+    @DynamoDbAttribute("Status")
+    public String getStatus() {
+        return status;
+    }
+    
+    @DynamoDbAttribute("CreatedAt")
+    public Long getCreatedAt() {
+        return createdAt;
+    }
+    
+    @DynamoDbAttribute("UpdatedAt")
+    public Long getUpdatedAt() {
+        return updatedAt;
+    }
+    
+    @DynamoDbAttribute("Version")
+    public Integer getVersion() {
+        return version;
+    }
+    
+    @DynamoDbSecondaryPartitionKey(indexNames = "StatusDateIndex")
+    @DynamoDbAttribute("GSI1PK")
+    public String getGsi1Pk() {
+        return gsi1Pk;
+    }
+    
+    @DynamoDbSecondarySortKey(indexNames = "StatusDateIndex")
+    @DynamoDbAttribute("GSI1SK")
+    public String getGsi1Sk() {
+        return gsi1Sk;
+    }
+    
+    // Setters omitted for brevity
 }
 ```
 
 #### ReviewParticipantEntity
 
 ```java
-@Entity
-@Table(name = "review_participants")
+@DynamoDbBean
 public class ReviewParticipantEntity {
     
-    @Id
-    private UUID id;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cycle_id", nullable = false)
-    private ReviewCycleEntity cycle;
-    
-    @Column(name = "employee_id", nullable = false)
-    private UUID employeeId;
-    
-    @Column(name = "supervisor_id", nullable = false)
-    private UUID supervisorId;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private ParticipantStatus status;
-    
-    @Column(name = "final_score", precision = 3, scale = 2)
+    private String pk;  // "CYCLE#{cycleId}"
+    private String sk;  // "PARTICIPANT#{participantId}"
+    private String entityType;  // "ReviewParticipant"
+    private String participantId;
+    private String employeeId;
+    private String supervisorId;
+    private String status;  // PENDING, SELF_ASSESSMENT_SUBMITTED, etc.
     private BigDecimal finalScore;
+    private Long createdAt;
+    private Long updatedAt;
     
-    @OneToOne(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private SelfAssessmentEntity selfAssessment;
+    // GSI attributes
+    private String gsi2Pk;  // "EMPLOYEE#{employeeId}"
+    private String gsi2Sk;  // "CYCLE#{cycleId}"
+    private String gsi3Pk;  // "SUPERVISOR#{supervisorId}"
+    private String gsi3Sk;  // "CYCLE#{cycleId}"
     
-    @OneToOne(mappedBy = "participant", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ManagerAssessmentEntity managerAssessment;
-    
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-    
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = Instant.now();
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPk() {
+        return pk;
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = Instant.now();
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSk() {
+        return sk;
     }
+    
+    @DynamoDbAttribute("EntityType")
+    public String getEntityType() {
+        return entityType;
+    }
+    
+    @DynamoDbAttribute("ParticipantId")
+    public String getParticipantId() {
+        return participantId;
+    }
+    
+    @DynamoDbAttribute("EmployeeId")
+    public String getEmployeeId() {
+        return employeeId;
+    }
+    
+    @DynamoDbAttribute("SupervisorId")
+    public String getSupervisorId() {
+        return supervisorId;
+    }
+    
+    @DynamoDbAttribute("Status")
+    public String getStatus() {
+        return status;
+    }
+    
+    @DynamoDbAttribute("FinalScore")
+    public BigDecimal getFinalScore() {
+        return finalScore;
+    }
+    
+    @DynamoDbSecondaryPartitionKey(indexNames = "EmployeeIndex")
+    @DynamoDbAttribute("GSI2PK")
+    public String getGsi2Pk() {
+        return gsi2Pk;
+    }
+    
+    @DynamoDbSecondarySortKey(indexNames = "EmployeeIndex")
+    @DynamoDbAttribute("GSI2SK")
+    public String getGsi2Sk() {
+        return gsi2Sk;
+    }
+    
+    @DynamoDbSecondaryPartitionKey(indexNames = "SupervisorIndex")
+    @DynamoDbAttribute("GSI3PK")
+    public String getGsi3Pk() {
+        return gsi3Pk;
+    }
+    
+    @DynamoDbSecondarySortKey(indexNames = "SupervisorIndex")
+    @DynamoDbAttribute("GSI3SK")
+    public String getGsi3Sk() {
+        return gsi3Sk;
+    }
+    
+    // Setters omitted for brevity
+}
+```
+
+#### SelfAssessmentEntity
+
+```java
+@DynamoDbBean
+public class SelfAssessmentEntity {
+    
+    private String pk;  // "CYCLE#{cycleId}"
+    private String sk;  // "PARTICIPANT#{participantId}#SELF"
+    private String entityType;  // "SelfAssessment"
+    private String assessmentId;
+    private String participantId;
+    private Long submittedDate;
+    private String comments;
+    private String extraMileEfforts;
+    private List<AssessmentScoreItem> kpiScores;
+    private Long createdAt;
+    private Long updatedAt;
+    
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPk() {
+        return pk;
+    }
+    
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSk() {
+        return sk;
+    }
+    
+    @DynamoDbAttribute("KPIScores")
+    public List<AssessmentScoreItem> getKpiScores() {
+        return kpiScores;
+    }
+    
+    // Other getters/setters
+}
+
+@DynamoDbBean
+public static class AssessmentScoreItem {
+    private String kpiId;
+    private BigDecimal ratingValue;
+    private BigDecimal achievementPercentage;
+    private String comment;
     
     // Getters and setters
 }
@@ -2521,69 +2711,96 @@ public class ReviewParticipantEntity {
 #### FeedbackRecordEntity
 
 ```java
-@Entity
-@Table(name = "feedback_records")
+@DynamoDbBean
 public class FeedbackRecordEntity {
     
-    @Id
-    private UUID id;
-    
-    @Column(name = "giver_id", nullable = false)
-    private UUID giverId;
-    
-    @Column(name = "receiver_id", nullable = false)
-    private UUID receiverId;
-    
-    @Column(name = "kpi_id", nullable = false)
-    private UUID kpiId;
-    
-    @Column(name = "kpi_name", nullable = false)
+    private String pk;  // "FEEDBACK#{feedbackId}"
+    private String sk;  // "METADATA"
+    private String entityType;  // "FeedbackRecord"
+    private String feedbackId;
+    private String giverId;
+    private String receiverId;
+    private String kpiId;
     private String kpiName;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "feedback_type", nullable = false)
-    private FeedbackType feedbackType;
-    
-    @Column(name = "content_text", nullable = false, columnDefinition = "TEXT")
+    private String feedbackType;  // POSITIVE, IMPROVEMENT
     private String contentText;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private FeedbackStatus status;
-    
-    @Column(name = "created_date", nullable = false)
-    private Instant createdDate;
-    
-    @OneToMany(mappedBy = "feedback", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("responseDate ASC")
-    private List<FeedbackResponseEntity> responses = new ArrayList<>();
-    
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-    
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
-    
-    @Version
-    @Column(name = "version")
+    private String status;  // CREATED, ACKNOWLEDGED, RESPONDED, RESOLVED
+    private Long createdDate;
+    private Long updatedAt;
     private Integer version;
     
-    @PrePersist
-    protected void onCreate() {
-        createdAt = Instant.now();
-        updatedAt = Instant.now();
+    // GSI attributes
+    private String gsi1Pk;  // "RECEIVER#{receiverId}"
+    private String gsi1Sk;  // "FEEDBACK#{createdDate}"
+    private String gsi2Pk;  // "GIVER#{giverId}"
+    private String gsi2Sk;  // "FEEDBACK#{createdDate}"
+    private String gsi3Pk;  // "KPI#{kpiId}"
+    private String gsi3Sk;  // "FEEDBACK#{createdDate}"
+    private String gsi4Pk;  // "STATUS#{status}"
+    private String gsi4Sk;  // "RECEIVER#{receiverId}#DATE#{createdDate}"
+    
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPk() {
+        return pk;
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = Instant.now();
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSk() {
+        return sk;
     }
     
-    // Getters and setters
+    @DynamoDbSecondaryPartitionKey(indexNames = "ReceiverIndex")
+    @DynamoDbAttribute("GSI1PK")
+    public String getGsi1Pk() {
+        return gsi1Pk;
+    }
+    
+    @DynamoDbSecondarySortKey(indexNames = "ReceiverIndex")
+    @DynamoDbAttribute("GSI1SK")
+    public String getGsi1Sk() {
+        return gsi1Sk;
+    }
+    
+    // Additional GSI getters/setters
+    // Other getters/setters omitted for brevity
 }
 ```
 
-### Repository Implementation
+#### FeedbackResponseEntity
+
+```java
+@DynamoDbBean
+public class FeedbackResponseEntity {
+    
+    private String pk;  // "FEEDBACK#{feedbackId}"
+    private String sk;  // "RESPONSE#{responseId}"
+    private String entityType;  // "FeedbackResponse"
+    private String responseId;
+    private String feedbackId;
+    private String responderId;
+    private String responseText;
+    private Long responseDate;
+    private Long createdAt;
+    
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("PK")
+    public String getPk() {
+        return pk;
+    }
+    
+    @DynamoDbSortKey
+    @DynamoDbAttribute("SK")
+    public String getSk() {
+        return sk;
+    }
+    
+    // Other getters/setters
+}
+```
+
+### Repository Implementation (DynamoDB)
 
 #### ReviewCycleRepositoryImpl
 
@@ -2591,80 +2808,240 @@ public class FeedbackRecordEntity {
 @Repository
 public class ReviewCycleRepositoryImpl implements IReviewCycleRepository {
     
-    private final JpaReviewCycleRepository jpaRepository;
+    private final DynamoDbEnhancedClient dynamoDbClient;
+    private final DynamoDbTable<ReviewCycleEntity> cycleTable;
+    private final DynamoDbTable<ReviewParticipantEntity> participantTable;
     private final ReviewCycleMapper mapper;
     
     public ReviewCycleRepositoryImpl(
-        JpaReviewCycleRepository jpaRepository,
-        ReviewCycleMapper mapper
+        DynamoDbEnhancedClient dynamoDbClient,
+        ReviewCycleMapper mapper,
+        @Value("${aws.dynamodb.table-prefix}") String tablePrefix
     ) {
-        this.jpaRepository = jpaRepository;
+        this.dynamoDbClient = dynamoDbClient;
         this.mapper = mapper;
+        
+        TableSchema<ReviewCycleEntity> cycleSchema = TableSchema.fromBean(ReviewCycleEntity.class);
+        this.cycleTable = dynamoDbClient.table(tablePrefix + "ReviewCycles", cycleSchema);
+        
+        TableSchema<ReviewParticipantEntity> participantSchema = TableSchema.fromBean(ReviewParticipantEntity.class);
+        this.participantTable = dynamoDbClient.table(tablePrefix + "ReviewCycles", participantSchema);
     }
     
     @Override
     public void save(ReviewCycle cycle) {
-        ReviewCycleEntity entity = mapper.toEntity(cycle);
-        jpaRepository.save(entity);
-    }
-    
-    @Override
-    public void update(ReviewCycle cycle) {
-        ReviewCycleEntity entity = mapper.toEntity(cycle);
-        jpaRepository.save(entity);
+        // Convert domain to entities
+        ReviewCycleEntity cycleEntity = mapper.toCycleEntity(cycle);
+        List<ReviewParticipantEntity> participantEntities = mapper.toParticipantEntities(cycle);
+        
+        // Batch write all items
+        WriteBatch.Builder<ReviewCycleEntity> cycleWriteBatch = WriteBatch.builder(ReviewCycleEntity.class)
+            .mappedTableResource(cycleTable)
+            .addPutItem(cycleEntity);
+        
+        WriteBatch.Builder<ReviewParticipantEntity> participantWriteBatch = WriteBatch.builder(ReviewParticipantEntity.class)
+            .mappedTableResource(participantTable);
+        
+        participantEntities.forEach(participantWriteBatch::addPutItem);
+        
+        dynamoDbClient.batchWriteItem(r -> r
+            .addWriteBatch(cycleWriteBatch.build())
+            .addWriteBatch(participantWriteBatch.build())
+        );
     }
     
     @Override
     public Optional<ReviewCycle> findById(ReviewCycleId cycleId) {
-        return jpaRepository.findById(cycleId.getValue())
-            .map(mapper::toDomain);
+        String pk = "CYCLE#" + cycleId.getValue();
+        
+        // Query all items for this cycle
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        PageIterable<ReviewCycleEntity> results = cycleTable.query(request);
+        
+        // Reconstruct domain aggregate from items
+        return mapper.toDomain(results.items().stream().collect(Collectors.toList()));
     }
     
     @Override
     public List<ReviewCycle> findActiveCycles() {
-        return jpaRepository.findByStatus(ReviewCycleStatus.ACTIVE)
-            .stream()
-            .map(mapper::toDomain)
+        // Query GSI1 by status
+        String gsi1Pk = "STATUS#ACTIVE";
+        
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(gsi1Pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        DynamoDbIndex<ReviewCycleEntity> gsi1 = cycleTable.index("StatusDateIndex");
+        PageIterable<ReviewCycleEntity> results = gsi1.query(request);
+        
+        return results.items().stream()
+            .map(mapper::toDomainFromMetadata)
             .collect(Collectors.toList());
     }
     
     @Override
     public List<ReviewCycle> findCyclesForEmployee(EmployeeId employeeId) {
-        return jpaRepository.findByParticipantsEmployeeId(employeeId.getValue())
-            .stream()
-            .map(mapper::toDomain)
+        // Query GSI2 by employee
+        String gsi2Pk = "EMPLOYEE#" + employeeId.getValue();
+        
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(gsi2Pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        DynamoDbIndex<ReviewParticipantEntity> gsi2 = participantTable.index("EmployeeIndex");
+        PageIterable<ReviewParticipantEntity> results = gsi2.query(request);
+        
+        // For each participant, fetch full cycle data
+        return results.items().stream()
+            .map(p -> findById(new ReviewCycleId(extractCycleIdFromPk(p.getPk()))))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
             .collect(Collectors.toList());
     }
     
-    // Additional query methods
+    @Override
+    public List<ReviewCycle> findCyclesForSupervisor(SupervisorId supervisorId) {
+        // Query GSI3 by supervisor
+        String gsi3Pk = "SUPERVISOR#" + supervisorId.getValue();
+        
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(gsi3Pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        DynamoDbIndex<ReviewParticipantEntity> gsi3 = participantTable.index("SupervisorIndex");
+        PageIterable<ReviewParticipantEntity> results = gsi3.query(request);
+        
+        return results.items().stream()
+            .map(p -> findById(new ReviewCycleId(extractCycleIdFromPk(p.getPk()))))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+    }
+    
+    private String extractCycleIdFromPk(String pk) {
+        return pk.replace("CYCLE#", "");
+    }
 }
 ```
 
-#### JpaReviewCycleRepository (Spring Data JPA)
+#### FeedbackRecordRepositoryImpl
 
 ```java
 @Repository
-public interface JpaReviewCycleRepository extends JpaRepository<ReviewCycleEntity, UUID> {
+public class FeedbackRecordRepositoryImpl implements IFeedbackRecordRepository {
     
-    List<ReviewCycleEntity> findByStatus(ReviewCycleStatus status);
+    private final DynamoDbEnhancedClient dynamoDbClient;
+    private final DynamoDbTable<FeedbackRecordEntity> feedbackTable;
+    private final DynamoDbTable<FeedbackResponseEntity> responseTable;
+    private final FeedbackMapper mapper;
     
-    @Query("SELECT rc FROM ReviewCycleEntity rc " +
-           "JOIN rc.participants p " +
-           "WHERE p.employeeId = :employeeId")
-    List<ReviewCycleEntity> findByParticipantsEmployeeId(@Param("employeeId") UUID employeeId);
+    public FeedbackRecordRepositoryImpl(
+        DynamoDbEnhancedClient dynamoDbClient,
+        FeedbackMapper mapper,
+        @Value("${aws.dynamodb.table-prefix}") String tablePrefix
+    ) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.mapper = mapper;
+        
+        TableSchema<FeedbackRecordEntity> feedbackSchema = TableSchema.fromBean(FeedbackRecordEntity.class);
+        this.feedbackTable = dynamoDbClient.table(tablePrefix + "FeedbackRecords", feedbackSchema);
+        
+        TableSchema<FeedbackResponseEntity> responseSchema = TableSchema.fromBean(FeedbackResponseEntity.class);
+        this.responseTable = dynamoDbClient.table(tablePrefix + "FeedbackRecords", responseSchema);
+    }
     
-    @Query("SELECT rc FROM ReviewCycleEntity rc " +
-           "JOIN rc.participants p " +
-           "WHERE p.supervisorId = :supervisorId")
-    List<ReviewCycleEntity> findByParticipantsSupervisorId(@Param("supervisorId") UUID supervisorId);
+    @Override
+    public void save(FeedbackRecord feedback) {
+        FeedbackRecordEntity entity = mapper.toEntity(feedback);
+        feedbackTable.putItem(entity);
+    }
     
-    @Query("SELECT rc FROM ReviewCycleEntity rc " +
-           "WHERE rc.startDate >= :startDate AND rc.endDate <= :endDate")
-    Page<ReviewCycleEntity> findByDateRange(
-        @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate,
-        Pageable pageable
-    );
+    @Override
+    public Optional<FeedbackRecord> findById(FeedbackId feedbackId) {
+        String pk = "FEEDBACK#" + feedbackId.getValue();
+        
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        PageIterable<FeedbackRecordEntity> results = feedbackTable.query(request);
+        
+        return mapper.toDomain(results.items().stream().collect(Collectors.toList()));
+    }
+    
+    @Override
+    public List<FeedbackRecord> findFeedbackForEmployee(EmployeeId employeeId) {
+        // Query GSI1 by receiver
+        String gsi1Pk = "RECEIVER#" + employeeId.getValue();
+        
+        QueryConditional queryConditional = QueryConditional
+            .keyEqualTo(Key.builder()
+                .partitionValue(gsi1Pk)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        DynamoDbIndex<FeedbackRecordEntity> gsi1 = feedbackTable.index("ReceiverIndex");
+        PageIterable<FeedbackRecordEntity> results = gsi1.query(request);
+        
+        return results.items().stream()
+            .map(mapper::toDomainFromMetadata)
+            .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<FeedbackRecord> findUnresolvedFeedback(EmployeeId receiverId) {
+        // Query GSI4 by status and receiver
+        String gsi4Pk = "STATUS#CREATED";
+        String gsi4SkPrefix = "RECEIVER#" + receiverId.getValue();
+        
+        QueryConditional queryConditional = QueryConditional
+            .sortBeginsWith(Key.builder()
+                .partitionValue(gsi4Pk)
+                .sortValue(gsi4SkPrefix)
+                .build());
+        
+        QueryEnhancedRequest request = QueryEnhancedRequest.builder()
+            .queryConditional(queryConditional)
+            .build();
+        
+        DynamoDbIndex<FeedbackRecordEntity> gsi4 = feedbackTable.index("StatusReceiverIndex");
+        PageIterable<FeedbackRecordEntity> results = gsi4.query(request);
+        
+        return results.items().stream()
+            .map(mapper::toDomainFromMetadata)
+            .collect(Collectors.toList());
+    }
 }
 ```
 
@@ -4795,124 +5172,219 @@ resilience4j:
 
 ---
 
-## Appendix B: Database Schema Reference
+## Appendix B: DynamoDB Schema Reference
 
-### Complete Schema Diagram
+### Complete DynamoDB Table Structure
 
+**Table 1: ReviewCycles**
 ```
-review_cycles
-├── id (UUID, PK)
-├── cycle_name (VARCHAR)
-├── start_date (DATE)
-├── end_date (DATE)
-├── status (VARCHAR)
-├── created_at (TIMESTAMP)
-├── updated_at (TIMESTAMP)
-└── version (BIGINT)
+Table Name: ReviewCycles
+Billing Mode: PAY_PER_REQUEST
+Encryption: AWS-managed (SSE)
+Point-in-Time Recovery: Enabled
+Streams: Enabled (NEW_AND_OLD_IMAGES)
 
-review_participants
-├── id (UUID, PK)
-├── review_cycle_id (UUID, FK → review_cycles.id)
-├── employee_id (UUID)
-├── supervisor_id (UUID)
-├── status (VARCHAR)
-├── final_score (DECIMAL)
-├── created_at (TIMESTAMP)
-└── updated_at (TIMESTAMP)
+Primary Key:
+├── PK (String, Partition Key) = "CYCLE#{cycleId}"
+└── SK (String, Sort Key) = "METADATA" | "PARTICIPANT#{participantId}" | "PARTICIPANT#{participantId}#SELF" | "PARTICIPANT#{participantId}#MANAGER"
 
-self_assessments
-├── id (UUID, PK)
-├── participant_id (UUID, FK → review_participants.id)
-├── submitted_date (TIMESTAMP)
-├── comments (TEXT)
-├── extra_mile_efforts (TEXT)
-├── created_at (TIMESTAMP)
-└── updated_at (TIMESTAMP)
+Attributes:
+├── EntityType (String) - "ReviewCycle" | "ReviewParticipant" | "SelfAssessment" | "ManagerAssessment"
+├── CycleId (String)
+├── CycleName (String)
+├── StartDate (String, ISO-8601)
+├── EndDate (String, ISO-8601)
+├── Status (String)
+├── EmployeeId (String)
+├── SupervisorId (String)
+├── ParticipantId (String)
+├── FinalScore (Number)
+├── SubmittedDate (Number, Unix timestamp)
+├── Comments (String)
+├── ExtraMileEfforts (String)
+├── OverallComments (String)
+├── KPIScores (List of Maps)
+├── CreatedAt (Number, Unix timestamp)
+├── UpdatedAt (Number, Unix timestamp)
+└── Version (Number)
 
-manager_assessments
-├── id (UUID, PK)
-├── participant_id (UUID, FK → review_participants.id)
-├── submitted_date (TIMESTAMP)
-├── overall_comments (TEXT)
-├── created_at (TIMESTAMP)
-└── updated_at (TIMESTAMP)
-
-assessment_scores
-├── id (UUID, PK)
-├── assessment_id (UUID, FK → self_assessments.id OR manager_assessments.id)
-├── assessment_type (VARCHAR) -- 'SELF' or 'MANAGER'
-├── kpi_id (UUID)
-├── rating_value (DECIMAL)
-├── achievement_percentage (DECIMAL)
-├── comment (TEXT)
-└── created_at (TIMESTAMP)
-
-feedback_records
-├── id (UUID, PK)
-├── giver_id (UUID)
-├── receiver_id (UUID)
-├── kpi_id (UUID)
-├── kpi_name (VARCHAR)
-├── feedback_type (VARCHAR)
-├── content_text (TEXT)
-├── status (VARCHAR)
-├── created_date (TIMESTAMP)
-├── updated_at (TIMESTAMP)
-└── version (BIGINT)
-
-feedback_responses
-├── id (UUID, PK)
-├── feedback_id (UUID, FK → feedback_records.id)
-├── responder_id (UUID)
-├── response_text (TEXT)
-├── response_date (TIMESTAMP)
-└── created_at (TIMESTAMP)
-
-event_outbox
-├── id (UUID, PK)
-├── aggregate_type (VARCHAR)
-├── aggregate_id (UUID)
-├── event_type (VARCHAR)
-├── event_payload (JSONB)
-├── event_metadata (JSONB)
-├── created_at (TIMESTAMP)
-├── published_at (TIMESTAMP)
-├── status (VARCHAR)
-├── retry_count (INT)
-└── error_message (TEXT)
+Global Secondary Indexes:
+├── GSI1: StatusDateIndex
+│   ├── GSI1PK (String, Partition Key) = "STATUS#{status}"
+│   ├── GSI1SK (String, Sort Key) = "CYCLE#{startDate}"
+│   └── Projection: ALL
+├── GSI2: EmployeeIndex
+│   ├── GSI2PK (String, Partition Key) = "EMPLOYEE#{employeeId}"
+│   ├── GSI2SK (String, Sort Key) = "CYCLE#{cycleId}"
+│   └── Projection: ALL
+└── GSI3: SupervisorIndex
+    ├── GSI3PK (String, Partition Key) = "SUPERVISOR#{supervisorId}"
+    ├── GSI3SK (String, Sort Key) = "CYCLE#{cycleId}"
+    └── Projection: ALL
 ```
 
-### Index Strategy
+**Table 2: FeedbackRecords**
+```
+Table Name: FeedbackRecords
+Billing Mode: PAY_PER_REQUEST
+Encryption: AWS-managed (SSE)
+Point-in-Time Recovery: Enabled
+Streams: Enabled (NEW_AND_OLD_IMAGES)
 
-**Performance Indexes**:
-```sql
--- Review Cycles
-CREATE INDEX idx_review_cycles_status ON review_cycles(status);
-CREATE INDEX idx_review_cycles_dates ON review_cycles(start_date, end_date);
+Primary Key:
+├── PK (String, Partition Key) = "FEEDBACK#{feedbackId}"
+└── SK (String, Sort Key) = "METADATA" | "RESPONSE#{responseId}"
 
--- Review Participants
-CREATE INDEX idx_participants_cycle ON review_participants(review_cycle_id);
-CREATE INDEX idx_participants_employee ON review_participants(employee_id);
-CREATE INDEX idx_participants_supervisor ON review_participants(supervisor_id);
-CREATE INDEX idx_participants_status ON review_participants(status);
+Attributes:
+├── EntityType (String) - "FeedbackRecord" | "FeedbackResponse"
+├── FeedbackId (String)
+├── GiverId (String)
+├── ReceiverId (String)
+├── KPIId (String)
+├── KPIName (String)
+├── FeedbackType (String) - "POSITIVE" | "IMPROVEMENT"
+├── ContentText (String)
+├── Status (String) - "CREATED" | "ACKNOWLEDGED" | "RESPONDED" | "RESOLVED"
+├── ResponseId (String)
+├── ResponderId (String)
+├── ResponseText (String)
+├── ResponseDate (Number, Unix timestamp)
+├── CreatedDate (Number, Unix timestamp)
+├── CreatedAt (Number, Unix timestamp)
+├── UpdatedAt (Number, Unix timestamp)
+└── Version (Number)
 
--- Assessments
-CREATE INDEX idx_self_assessments_participant ON self_assessments(participant_id);
-CREATE INDEX idx_manager_assessments_participant ON manager_assessments(participant_id);
-CREATE INDEX idx_assessment_scores_assessment ON assessment_scores(assessment_id, assessment_type);
-CREATE INDEX idx_assessment_scores_kpi ON assessment_scores(kpi_id);
+Global Secondary Indexes:
+├── GSI1: ReceiverIndex
+│   ├── GSI1PK (String, Partition Key) = "RECEIVER#{receiverId}"
+│   ├── GSI1SK (String, Sort Key) = "FEEDBACK#{createdDate}"
+│   └── Projection: ALL
+├── GSI2: GiverIndex
+│   ├── GSI2PK (String, Partition Key) = "GIVER#{giverId}"
+│   ├── GSI2SK (String, Sort Key) = "FEEDBACK#{createdDate}"
+│   └── Projection: ALL
+├── GSI3: KPIIndex
+│   ├── GSI3PK (String, Partition Key) = "KPI#{kpiId}"
+│   ├── GSI3SK (String, Sort Key) = "FEEDBACK#{createdDate}"
+│   └── Projection: ALL
+└── GSI4: StatusReceiverIndex
+    ├── GSI4PK (String, Partition Key) = "STATUS#{status}"
+    ├── GSI4SK (String, Sort Key) = "RECEIVER#{receiverId}#DATE#{createdDate}"
+    └── Projection: ALL
+```
 
--- Feedback
-CREATE INDEX idx_feedback_receiver ON feedback_records(receiver_id);
-CREATE INDEX idx_feedback_giver ON feedback_records(giver_id);
-CREATE INDEX idx_feedback_kpi ON feedback_records(kpi_id);
-CREATE INDEX idx_feedback_status ON feedback_records(status);
-CREATE INDEX idx_feedback_created ON feedback_records(created_date);
-CREATE INDEX idx_feedback_responses_feedback ON feedback_responses(feedback_id);
+**Table 3: EventOutbox**
+```
+Table Name: EventOutbox
+Billing Mode: PAY_PER_REQUEST
+Encryption: AWS-managed (SSE)
+Time to Live (TTL): Enabled on TTL attribute (90 days)
+Streams: Enabled (NEW_AND_OLD_IMAGES)
 
--- Event Outbox
-CREATE INDEX idx_outbox_status ON event_outbox(status, created_at);
-CREATE INDEX idx_outbox_aggregate ON event_outbox(aggregate_type, aggregate_id);
+Primary Key:
+├── PK (String, Partition Key) = "OUTBOX#{id}"
+└── SK (Number, Sort Key) = createdAt (Unix timestamp)
+
+Attributes:
+├── Id (String)
+├── AggregateType (String)
+├── AggregateId (String)
+├── EventType (String)
+├── EventPayload (Map)
+├── EventMetadata (Map)
+├── CreatedAt (Number, Unix timestamp)
+├── PublishedAt (Number, Unix timestamp, optional)
+├── Status (String) - "PENDING" | "PUBLISHED" | "FAILED"
+├── RetryCount (Number)
+├── ErrorMessage (String, optional)
+└── TTL (Number, Unix timestamp + 90 days)
+
+Global Secondary Index:
+└── GSI1: StatusIndex
+    ├── GSI1PK (String, Partition Key) = "STATUS#{status}"
+    ├── GSI1SK (Number, Sort Key) = createdAt
+    └── Projection: ALL
+```
+
+### Access Patterns and Query Examples
+
+**ReviewCycles Table:**
+```
+1. Get review cycle by ID:
+   Query: PK = "CYCLE#{cycleId}" AND SK = "METADATA"
+
+2. Get all participants for a cycle:
+   Query: PK = "CYCLE#{cycleId}" AND SK begins_with "PARTICIPANT#"
+
+3. Get self-assessment for participant:
+   Query: PK = "CYCLE#{cycleId}" AND SK = "PARTICIPANT#{participantId}#SELF"
+
+4. Get manager assessment for participant:
+   Query: PK = "CYCLE#{cycleId}" AND SK = "PARTICIPANT#{participantId}#MANAGER"
+
+5. Query cycles by status:
+   Query GSI1: GSI1PK = "STATUS#ACTIVE"
+
+6. Query cycles for employee:
+   Query GSI2: GSI2PK = "EMPLOYEE#{employeeId}"
+
+7. Query cycles for supervisor:
+   Query GSI3: GSI3PK = "SUPERVISOR#{supervisorId}"
+```
+
+**FeedbackRecords Table:**
+```
+1. Get feedback by ID:
+   Query: PK = "FEEDBACK#{feedbackId}" AND SK = "METADATA"
+
+2. Get all responses for feedback:
+   Query: PK = "FEEDBACK#{feedbackId}" AND SK begins_with "RESPONSE#"
+
+3. Query feedback for receiver:
+   Query GSI1: GSI1PK = "RECEIVER#{receiverId}"
+
+4. Query feedback by giver:
+   Query GSI2: GSI2PK = "GIVER#{giverId}"
+
+5. Query feedback for KPI:
+   Query GSI3: GSI3PK = "KPI#{kpiId}"
+
+6. Query unresolved feedback for receiver:
+   Query GSI4: GSI4PK = "STATUS#CREATED" AND GSI4SK begins_with "RECEIVER#{receiverId}"
+```
+
+**EventOutbox Table:**
+```
+1. Get pending events:
+   Query GSI1: GSI1PK = "STATUS#PENDING" ORDER BY GSI1SK ASC
+
+2. Get event by ID:
+   Query: PK = "OUTBOX#{id}"
+```
+
+### Capacity Planning
+
+**Estimated Read/Write Capacity:**
+```
+ReviewCycles Table:
+- Estimated Item Size: 2-5 KB (with participants and assessments)
+- Read Capacity: 50-100 RCU (provisioned) or PAY_PER_REQUEST
+- Write Capacity: 20-50 WCU (provisioned) or PAY_PER_REQUEST
+- GSI Capacity: Same as base table
+
+FeedbackRecords Table:
+- Estimated Item Size: 1-3 KB
+- Read Capacity: 100-200 RCU or PAY_PER_REQUEST
+- Write Capacity: 50-100 WCU or PAY_PER_REQUEST
+- GSI Capacity: Same as base table
+
+EventOutbox Table:
+- Estimated Item Size: 2-10 KB
+- Read Capacity: 20-50 RCU or PAY_PER_REQUEST
+- Write Capacity: 50-100 WCU or PAY_PER_REQUEST
+- GSI Capacity: Same as base table
+
+Recommendation: Start with PAY_PER_REQUEST billing mode for flexibility
 ```
 
 ---
@@ -4971,29 +5443,26 @@ spring:
   application:
     name: performance-management-service
   
-  datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:performance_db}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-  
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        use_sql_comments: true
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
+  # DynamoDB Configuration
+  cloud:
+    aws:
+      region:
+        static: ${AWS_REGION:us-east-1}
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID:}
+        secret-key: ${AWS_SECRET_ACCESS_KEY:}
+      dynamodb:
+        endpoint: ${DYNAMODB_ENDPOINT:} # For local development with DynamoDB Local
+        
+# AWS DynamoDB SDK Configuration
+aws:
+  dynamodb:
+    table-prefix: ${DYNAMODB_TABLE_PREFIX:dev-}
+    read-capacity: 5
+    write-capacity: 5
+    billing-mode: PAY_PER_REQUEST # or PROVISIONED
+    enable-streams: true
+    point-in-time-recovery: true
   
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -5155,14 +5624,23 @@ groups:
           summary: "High response time detected"
           description: "95th percentile response time is {{ $value }} seconds"
       
-      - alert: DatabaseConnectionPoolExhausted
-        expr: hikaricp_connections_active / hikaricp_connections_max > 0.9
+      - alert: DynamoDBThrottling
+        expr: rate(aws_dynamodb_user_errors_total{error="ProvisionedThroughputExceededException"}[5m]) > 0
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "Database connection pool nearly exhausted"
-          description: "Connection pool usage is at {{ $value }}%"
+          summary: "DynamoDB requests being throttled"
+          description: "DynamoDB throttling detected at {{ $value }} requests/sec"
+      
+      - alert: DynamoDBHighLatency
+        expr: aws_dynamodb_successful_request_latency_average > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High DynamoDB latency detected"
+          description: "Average latency is {{ $value }}ms"
       
       - alert: KafkaConsumerLag
         expr: kafka_consumer_lag > 1000
@@ -5237,7 +5715,7 @@ This logical design document provides a comprehensive blueprint for implementing
 | Layer | Technology | Justification |
 |-------|-----------|---------------|
 | Programming Language | Java 17 + Spring Boot 3.x | Mature ecosystem, strong typing, excellent tooling |
-| Database | PostgreSQL 15+ | ACID compliance, JSON support, proven reliability |
+| Database | AWS DynamoDB | Fully managed NoSQL, serverless, automatic scaling, single-digit millisecond latency |
 | Event Streaming | Apache Kafka | High throughput, durability, scalability |
 | Caching | Redis | Fast in-memory caching, distributed support |
 | Monitoring | Prometheus + Grafana | Industry standard, rich metrics, flexible dashboards |
