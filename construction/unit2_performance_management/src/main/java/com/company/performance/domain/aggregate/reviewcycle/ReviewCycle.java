@@ -40,6 +40,9 @@ public class ReviewCycle {
             LocalDate endDate,
             List<ReviewParticipant> participants) {
         
+        validateCycleName(cycleName);
+        validateDates(startDate, endDate);
+        
         this.id = ReviewCycleId.generate();
         this.cycleName = cycleName;
         this.startDate = startDate;
@@ -47,6 +50,21 @@ public class ReviewCycle {
         this.status = ReviewCycleStatus.ACTIVE;
         this.participants = new ArrayList<>(participants);
         this.domainEvents = new ArrayList<>();
+    }
+    
+    private void validateCycleName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Cycle name cannot be null or empty");
+        }
+    }
+    
+    private void validateDates(LocalDate start, LocalDate end) {
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Start date and end date cannot be null");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("End date cannot be before start date");
+        }
     }
     
     /**
@@ -132,6 +150,7 @@ public class ReviewCycle {
      * Complete the review cycle
      */
     public void complete() {
+        ensureCycleIsActive();
         ensureAllParticipantsCompleted();
         
         this.status = ReviewCycleStatus.COMPLETED;
