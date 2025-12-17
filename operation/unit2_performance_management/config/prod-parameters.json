@@ -1,0 +1,26 @@
+{
+  "Parameters": {
+    "Environment": "prod",
+    "VpcCIDR": "10.2.0.0/16",
+    "PublicSubnet1CIDR": "10.2.1.0/24",
+    "PublicSubnet2CIDR": "10.2.2.0/24",
+    "PrivateSubnet1CIDR": "10.2.11.0/24",
+    "PrivateSubnet2CIDR": "10.2.12.0/24",
+    "KafkaVersion": "3.5.1",
+    "BrokerInstanceType": "kafka.m5.xlarge",
+    "NodeType": "cache.r6g.xlarge",
+    "NumCacheNodes": "3",
+    "CertificateArn": "arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERTIFICATE_ID",
+    "TaskCPU": "2048",
+    "TaskMemory": "4096",
+    "DesiredCount": "3",
+    "MinCapacity": "3",
+    "MaxCapacity": "12"
+  },
+  "Tags": {
+    "Environment": "prod",
+    "Project": "PerformanceManagement",
+    "ManagedBy": "CloudFormation",
+    "CostCenter": "Production"
+  }
+}

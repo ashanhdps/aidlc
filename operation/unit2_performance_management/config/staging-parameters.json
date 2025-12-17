@@ -1,0 +1,26 @@
+{
+  "Parameters": {
+    "Environment": "staging",
+    "VpcCIDR": "10.1.0.0/16",
+    "PublicSubnet1CIDR": "10.1.1.0/24",
+    "PublicSubnet2CIDR": "10.1.2.0/24",
+    "PrivateSubnet1CIDR": "10.1.11.0/24",
+    "PrivateSubnet2CIDR": "10.1.12.0/24",
+    "KafkaVersion": "3.5.1",
+    "BrokerInstanceType": "kafka.m5.large",
+    "NodeType": "cache.r6g.large",
+    "NumCacheNodes": "2",
+    "CertificateArn": "arn:aws:acm:REGION:ACCOUNT_ID:certificate/CERTIFICATE_ID",
+    "TaskCPU": "1024",
+    "TaskMemory": "2048",
+    "DesiredCount": "2",
+    "MinCapacity": "2",
+    "MaxCapacity": "8"
+  },
+  "Tags": {
+    "Environment": "staging",
+    "Project": "PerformanceManagement",
+    "ManagedBy": "CloudFormation",
+    "CostCenter": "Engineering"
+  }
+}

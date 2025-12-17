@@ -1,0 +1,356 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amazon MSK (Managed Kafka) cluster for Performance Management Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+  
+  VPCId:
+    Type: String
+    Description: VPC ID where MSK cluster will be deployed
+  
+  PrivateSubnet1Id:
+    Type: String
+    Description: Private Subnet 1 ID
+  
+  PrivateSubnet2Id:
+    Type: String
+    Description: Private Subnet 2 ID
+  
+  MSKSecurityGroupId:
+    Type: String
+    Description: Security Group ID for MSK cluster
+  
+  KafkaVersion:
+    Type: String
+    Default: '3.5.1'
+    Description: Kafka version
+  
+  BrokerInstanceType:
+    Type: String
+    Default: kafka.m5.large
+    AllowedValues:
+      - kafka.t3.small
+      - kafka.m5.large
+      - kafka.m5.xlarge
+      - kafka.m5.2xlarge
+    Description: Broker instance type
+
+Resources:
+  # KMS Key for MSK Encryption
+  MSKKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub 'KMS key for ${Environment} MSK cluster encryption'
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: Allow Kafka to use the key
+            Effect: Allow
+            Principal:
+              Service: kafka.amazonaws.com
+            Action:
+              - 'kms:Decrypt'
+              - 'kms:GenerateDataKey'
+              - 'kms:CreateGrant'
+            Resource: '*'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-msk-kms-key'
+        - Key: Environment
+          Value: !Ref Environment
+
+  MSKKMSKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub 'alias/${Environment}-performance-mgmt-msk'
+      TargetKeyId: !Ref MSKKMSKey
+
+  # CloudWatch Log Group for MSK
+  MSKLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/msk/${Environment}-performance-mgmt'
+      RetentionInDays: 30
+
+  # MSK Configuration
+  MSKConfiguration:
+    Type: AWS::MSK::Configuration
+    Properties:
+      Name: !Sub '${Environment}-performance-mgmt-config'
+      Description: !Sub 'MSK configuration for ${Environment} Performance Management Service'
+      KafkaVersionsList:
+        - !Ref KafkaVersion
+      ServerProperties: |
+        auto.create.topics.enable=false
+        default.replication.factor=3
+        min.insync.replicas=2
+        num.io.threads=8
+        num.network.threads=5
+        num.partitions=3
+        num.replica.fetchers=2
+        replica.lag.time.max.ms=30000
+        socket.receive.buffer.bytes=102400
+        socket.request.max.bytes=104857600
+        socket.send.buffer.bytes=102400
+        unclean.leader.election.enable=false
+        zookeeper.session.timeout.ms=18000
+        log.retention.hours=168
+        log.retention.bytes=-1
+        log.segment.bytes=1073741824
+        log.cleanup.policy=delete
+        compression.type=producer
+
+  # MSK Cluster
+  MSKCluster:
+    Type: AWS::MSK::Cluster
+    Properties:
+      ClusterName: !Sub '${Environment}-performance-mgmt-cluster'
+      KafkaVersion: !Ref KafkaVersion
+      NumberOfBrokerNodes: 3
+      BrokerNodeGroupInfo:
+        InstanceType: !Ref BrokerInstanceType
+        ClientSubnets:
+          - !Ref PrivateSubnet1Id
+          - !Ref PrivateSubnet2Id
+          - !Ref PrivateSubnet1Id
+        SecurityGroups:
+          - !Ref MSKSecurityGroupId
+        StorageInfo:
+          EBSStorageInfo:
+            VolumeSize: 100
+            ProvisionedThroughput:
+              Enabled: true
+              VolumeThroughput: 250
+        ConnectivityInfo:
+          PublicAccess:
+            Type: DISABLED
+      EncryptionInfo:
+        EncryptionAtRest:
+          DataVolumeKMSKeyId: !Ref MSKKMSKey
+        EncryptionInTransit:
+          ClientBroker: TLS
+          InCluster: true
+      EnhancedMonitoring: PER_TOPIC_PER_BROKER
+      OpenMonitoring:
+        Prometheus:
+          JmxExporter:
+            EnabledInBroker: true
+          NodeExporter:
+            EnabledInBroker: true
+      LoggingInfo:
+        BrokerLogs:
+          CloudWatchLogs:
+            Enabled: true
+            LogGroup: !Ref MSKLogGroup
+      ConfigurationInfo:
+        Arn: !GetAtt MSKConfiguration.Arn
+        Revision: 1
+      Tags:
+        Name: !Sub '${Environment}-performance-mgmt-msk'
+        Environment: !Ref Environment
+        Service: performance-management
+
+  # CloudWatch Alarms for MSK
+  MSKCPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-MSK-HighCPU'
+      AlarmDescription: Alert when MSK cluster CPU utilization is high
+      MetricName: CpuUser
+      Namespace: AWS/Kafka
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Cluster Name
+          Value: !Ref MSKCluster
+      TreatMissingData: notBreaching
+
+  MSKDiskUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-MSK-HighDiskUsage'
+      AlarmDescription: Alert when MSK cluster disk usage is high
+      MetricName: KafkaDataLogsDiskUsed
+      Namespace: AWS/Kafka
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Cluster Name
+          Value: !Ref MSKCluster
+      TreatMissingData: notBreaching
+
+  MSKMemoryUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-MSK-HighMemory'
+      AlarmDescription: Alert when MSK cluster memory usage is high
+      MetricName: MemoryUsed
+      Namespace: AWS/Kafka
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 85
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: Cluster Name
+          Value: !Ref MSKCluster
+      TreatMissingData: notBreaching
+
+  # Lambda Function to Create Kafka Topics
+  KafkaTopicCreatorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: MSKAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - kafka:DescribeCluster
+                  - kafka:GetBootstrapBrokers
+                  - kafka-cluster:Connect
+                  - kafka-cluster:AlterCluster
+                  - kafka-cluster:DescribeCluster
+                  - kafka-cluster:CreateTopic
+                  - kafka-cluster:DescribeTopic
+                  - kafka-cluster:WriteData
+                  - kafka-cluster:ReadData
+                Resource: !GetAtt MSKCluster.Arn
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: '*'
+
+  KafkaTopicCreatorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${Environment}-kafka-topic-creator'
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt KafkaTopicCreatorRole.Arn
+      Timeout: 300
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref MSKSecurityGroupId
+        SubnetIds:
+          - !Ref PrivateSubnet1Id
+          - !Ref PrivateSubnet2Id
+      Environment:
+        Variables:
+          CLUSTER_ARN: !Ref MSKCluster
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+          from kafka.admin import KafkaAdminClient, NewTopic
+          
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                      return
+                  
+                  # Get MSK bootstrap servers
+                  msk_client = boto3.client('kafka')
+                  cluster_arn = event['ResourceProperties']['ClusterArn']
+                  
+                  response = msk_client.get_bootstrap_brokers(ClusterArn=cluster_arn)
+                  bootstrap_servers = response['BootstrapBrokerStringTls'].split(',')
+                  
+                  # Create Kafka admin client
+                  admin_client = KafkaAdminClient(
+                      bootstrap_servers=bootstrap_servers,
+                      security_protocol='SSL'
+                  )
+                  
+                  # Define topics
+                  topics = [
+                      NewTopic(name='performance-management.domain-events', 
+                              num_partitions=3, replication_factor=3,
+                              topic_configs={'retention.ms': '604800000'}),  # 7 days
+                      NewTopic(name='performance-management.integration-events', 
+                              num_partitions=3, replication_factor=3,
+                              topic_configs={'retention.ms': '2592000000'}),  # 30 days
+                      NewTopic(name='performance-management.dead-letter', 
+                              num_partitions=1, replication_factor=3,
+                              topic_configs={'retention.ms': '7776000000'}),  # 90 days
+                      NewTopic(name='performance-management.audit', 
+                              num_partitions=1, replication_factor=3,
+                              topic_configs={'retention.ms': '31536000000'})  # 365 days
+                  ]
+                  
+                  # Create topics
+                  admin_client.create_topics(new_topics=topics, validate_only=False)
+                  
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {
+                      'Message': 'Topics created successfully'
+                  })
+              except Exception as e:
+                  print(f'Error: {str(e)}')
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {
+                      'Message': str(e)
+                  })
+
+  CreateKafkaTopics:
+    Type: Custom::KafkaTopics
+    DependsOn: MSKCluster
+    Properties:
+      ServiceToken: !GetAtt KafkaTopicCreatorFunction.Arn
+      ClusterArn: !Ref MSKCluster
+
+Outputs:
+  MSKClusterArn:
+    Description: MSK Cluster ARN
+    Value: !Ref MSKCluster
+    Export:
+      Name: !Sub '${Environment}-msk-cluster-arn'
+
+  MSKClusterName:
+    Description: MSK Cluster Name
+    Value: !Sub '${Environment}-performance-mgmt-cluster'
+    Export:
+      Name: !Sub '${Environment}-msk-cluster-name'
+
+  MSKKMSKeyId:
+    Description: MSK KMS Key ID
+    Value: !Ref MSKKMSKey
+    Export:
+      Name: !Sub '${Environment}-msk-kms-key-id'
+
+  MSKKMSKeyArn:
+    Description: MSK KMS Key ARN
+    Value: !GetAtt MSKKMSKey.Arn
+    Export:
+      Name: !Sub '${Environment}-msk-kms-key-arn'
