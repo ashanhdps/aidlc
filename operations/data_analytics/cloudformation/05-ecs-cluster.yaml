@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Fargate cluster for Data Analytics Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: data-analytics
+    Description: Project name for resource naming
+  
+  LogRetentionDays:
+    Type: Number
+    Default: 7
+    Description: CloudWatch log retention in days
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${ProjectName}-${Environment}-cluster'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled  # Disabled for cost savings in test environment
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-cluster'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+  # CloudWatch Log Group for ECS Tasks
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${ProjectName}-${Environment}'
+      RetentionInDays: !Ref LogRetentionDays
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-log-group'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ECR Repository for Container Images
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub '${ProjectName}-${Environment}'
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: false  # Disabled for cost savings in test environment
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 5 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 5
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-ecr'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Service Discovery Namespace
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub '${ProjectName}-${Environment}.local'
+      Vpc:
+        Fn::ImportValue: !Sub '${ProjectName}-${Environment}-vpc-id'
+      Description: Service discovery namespace for Data Analytics Service
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-service-discovery'
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  ECSClusterName:
+    Description: ECS Cluster Name
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-cluster-name'
+
+  ECSClusterArn:
+    Description: ECS Cluster ARN
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-cluster-arn'
+
+  ECSLogGroupName:
+    Description: CloudWatch Log Group Name
+    Value: !Ref ECSLogGroup
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-log-group-name'
+
+  ECRRepositoryUri:
+    Description: ECR Repository URI
+    Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepository}'
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-ecr-uri'
+
+  ServiceDiscoveryNamespaceId:
+    Description: Service Discovery Namespace ID
+    Value: !Ref ServiceDiscoveryNamespace
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-service-discovery-namespace-id'
