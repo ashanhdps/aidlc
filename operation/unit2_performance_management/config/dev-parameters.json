@@ -1,0 +1,26 @@
+{
+  "Parameters": {
+    "Environment": "dev",
+    "VpcCIDR": "10.0.0.0/16",
+    "PublicSubnet1CIDR": "10.0.1.0/24",
+    "PublicSubnet2CIDR": "10.0.2.0/24",
+    "PrivateSubnet1CIDR": "10.0.11.0/24",
+    "PrivateSubnet2CIDR": "10.0.12.0/24",
+    "KafkaVersion": "3.5.1",
+    "BrokerInstanceType": "kafka.t3.small",
+    "NodeType": "cache.t3.small",
+    "NumCacheNodes": "1",
+    "CertificateArn": "",
+    "TaskCPU": "1024",
+    "TaskMemory": "2048",
+    "DesiredCount": "1",
+    "MinCapacity": "1",
+    "MaxCapacity": "4"
+  },
+  "Tags": {
+    "Environment": "dev",
+    "Project": "PerformanceManagement",
+    "ManagedBy": "CloudFormation",
+    "CostCenter": "Engineering"
+  }
+}

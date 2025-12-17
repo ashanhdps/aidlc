@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ElastiCache Redis cluster for Data Analytics Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: test
+    Description: Environment name
+  
+  ProjectName:
+    Type: String
+    Default: data-analytics
+    Description: Project name for resource naming
+  
+  RedisNodeType:
+    Type: String
+    Default: cache.t3.micro
+    Description: ElastiCache node type
+    AllowedValues:
+      - cache.t3.micro
+      - cache.t3.small
+      - cache.t3.medium
+  
+  RedisNumCacheNodes:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 3
+    Description: Number of cache nodes
+  
+  RedisEngineVersion:
+    Type: String
+    Default: '7.0'
+    Description: Redis engine version
+
+Resources:
+  # Cache Subnet Group
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      CacheSubnetGroupName: !Sub '${ProjectName}-${Environment}-cache-subnet-group'
+      Description: Subnet group for ElastiCache Redis
+      SubnetIds:
+        - Fn::Select:
+          - 0
+          - Fn::Split:
+            - ','
+            - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+        - Fn::Select:
+          - 1
+          - Fn::Split:
+            - ','
+            - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-private-subnets'
+
+  # Cache Parameter Group
+  CacheParameterGroup:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      CacheParameterGroupName: !Sub '${ProjectName}-${Environment}-redis-params'
+      Description: Parameter group for Redis cache
+      CacheParameterGroupFamily: redis7.x
+      Properties:
+        maxmemory-policy: allkeys-lru
+        timeout: 300
+
+  # Redis Cache Cluster
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      CacheClusterId: !Sub '${ProjectName}-${Environment}-redis'
+      CacheNodeType: !Ref RedisNodeType
+      Engine: redis
+      EngineVersion: !Ref RedisEngineVersion
+      NumCacheNodes: !Ref RedisNumCacheNodes
+      Port: 6379
+      
+      # Network and Security
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      VpcSecurityGroupIds:
+        - Fn::ImportValue: !Sub '${ProjectName}-${Environment}-redis-sg-id'
+      
+      # Parameter Group
+      CacheParameterGroupName: !Ref CacheParameterGroup
+      
+      # Maintenance
+      PreferredMaintenanceWindow: sun:05:00-sun:06:00
+      
+      # Notifications (disabled for cost savings)
+      NotificationTopicArn: !Ref 'AWS::NoValue'
+      
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-${Environment}-redis'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref ProjectName
+
+Outputs:
+  RedisEndpoint:
+    Description: Redis cluster endpoint
+    Value: !GetAtt RedisCluster.RedisEndpoint.Address
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-redis-endpoint'
+
+  RedisPort:
+    Description: Redis cluster port
+    Value: !GetAtt RedisCluster.RedisEndpoint.Port
+    Export:
+      Name: !Sub '${ProjectName}-${Environment}-redis-port'

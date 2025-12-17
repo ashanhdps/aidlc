@@ -1,0 +1,40 @@
+{
+  "Parameters": {
+    "Environment": "test",
+    "ProjectName": "data-analytics",
+    "Region": "ap-southeast-1",
+    
+    "VpcCidr": "10.0.0.0/16",
+    "PublicSubnet1Cidr": "10.0.1.0/24",
+    "PublicSubnet2Cidr": "10.0.2.0/24",
+    "PrivateSubnet1Cidr": "10.0.10.0/24",
+    "PrivateSubnet2Cidr": "10.0.20.0/24",
+    
+    "DatabaseInstanceClass": "db.t3.micro",
+    "DatabaseAllocatedStorage": "20",
+    "DatabaseEngine": "postgres",
+    "DatabaseEngineVersion": "15.4",
+    "DatabaseName": "dataanalytics",
+    "DatabaseUsername": "dbadmin",
+    "DatabasePassword": "TempPassword123!",
+    
+    "RedisNodeType": "cache.t3.micro",
+    "RedisNumCacheNodes": "1",
+    "RedisEngineVersion": "7.0",
+    
+    "EcsTaskCpu": "256",
+    "EcsTaskMemory": "512",
+    "EcsDesiredCount": "1",
+    "EcsMaxCapacity": "2",
+    "EcsMinCapacity": "1",
+    
+    "ContainerImage": "data-analytics-service:latest",
+    "ContainerPort": "8080",
+    
+    "S3BucketName": "data-analytics-reports-test-ap-southeast-1",
+    "SqsQueueName": "data-analytics-reports-queue",
+    
+    "LogRetentionDays": "7",
+    "EnableDetailedMonitoring": "false"
+  }
+}

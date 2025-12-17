@@ -1,0 +1,255 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ElastiCache Redis cluster for Performance Management Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+  
+  VPCId:
+    Type: String
+    Description: VPC ID where Redis cluster will be deployed
+  
+  PrivateSubnet1Id:
+    Type: String
+    Description: Private Subnet 1 ID
+  
+  PrivateSubnet2Id:
+    Type: String
+    Description: Private Subnet 2 ID
+  
+  ElastiCacheSecurityGroupId:
+    Type: String
+    Description: Security Group ID for ElastiCache cluster
+  
+  NodeType:
+    Type: String
+    Default: cache.r6g.large
+    AllowedValues:
+      - cache.t3.micro
+      - cache.t3.small
+      - cache.t3.medium
+      - cache.r6g.large
+      - cache.r6g.xlarge
+    Description: Redis node type
+  
+  NumCacheNodes:
+    Type: Number
+    Default: 2
+    MinValue: 1
+    MaxValue: 6
+    Description: Number of cache nodes in the cluster
+
+Resources:
+  # Subnet Group for ElastiCache
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: !Sub 'Subnet group for ${Environment} Redis cluster'
+      SubnetIds:
+        - !Ref PrivateSubnet1Id
+        - !Ref PrivateSubnet2Id
+      CacheSubnetGroupName: !Sub '${Environment}-performance-mgmt-redis-subnet-group'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-performance-mgmt-redis-subnet-group'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Parameter Group for Redis
+  RedisParameterGroup:
+    Type: AWS::ElastiCache::ParameterGroup
+    Properties:
+      CacheParameterGroupFamily: redis7
+      Description: !Sub 'Parameter group for ${Environment} Redis cluster'
+      Properties:
+        maxmemory-policy: allkeys-lru
+        timeout: 300
+        tcp-keepalive: 300
+        notify-keyspace-events: Ex
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-performance-mgmt-redis-params'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Replication Group (Redis Cluster with automatic failover)
+  RedisReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub '${Environment}-perf-mgmt-redis'
+      ReplicationGroupDescription: !Sub 'Redis cluster for ${Environment} Performance Management Service'
+      Engine: redis
+      EngineVersion: '7.0'
+      CacheNodeType: !Ref NodeType
+      NumCacheClusters: !Ref NumCacheNodes
+      AutomaticFailoverEnabled: true
+      MultiAZEnabled: true
+      CacheSubnetGroupName: !Ref RedisSubnetGroup
+      CacheParameterGroupName: !Ref RedisParameterGroup
+      SecurityGroupIds:
+        - !Ref ElastiCacheSecurityGroupId
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+      AuthToken: !Sub '{{resolve:secretsmanager:${RedisAuthSecret}:SecretString:password}}'
+      SnapshotRetentionLimit: 7
+      SnapshotWindow: '03:00-05:00'
+      PreferredMaintenanceWindow: 'sun:05:00-sun:07:00'
+      AutoMinorVersionUpgrade: true
+      NotificationTopicArn: !Ref RedisNotificationTopic
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-performance-mgmt-redis'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: performance-management
+
+  # Secrets Manager for Redis Auth Token
+  RedisAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub '${Environment}/performance-mgmt/redis/auth-token'
+      Description: !Sub 'Redis authentication token for ${Environment}'
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: 'password'
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+        RequireEachIncludedType: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-redis-auth-secret'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # SNS Topic for Redis Notifications
+  RedisNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-redis-notifications'
+      DisplayName: !Sub 'Redis notifications for ${Environment}'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-redis-notifications'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # CloudWatch Alarms for Redis
+  RedisCPUUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-Redis-HighCPU'
+      AlarmDescription: Alert when Redis CPU utilization is high
+      MetricName: CPUUtilization
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 75
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisReplicationGroup
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+  RedisMemoryUtilizationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-Redis-HighMemory'
+      AlarmDescription: Alert when Redis memory utilization is high
+      MetricName: DatabaseMemoryUsagePercentage
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisReplicationGroup
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+  RedisEvictionsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-Redis-HighEvictions'
+      AlarmDescription: Alert when Redis evictions are high
+      MetricName: Evictions
+      Namespace: AWS/ElastiCache
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1000
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisReplicationGroup
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+  RedisReplicationLagAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${Environment}-Redis-HighReplicationLag'
+      AlarmDescription: Alert when Redis replication lag is high
+      MetricName: ReplicationLag
+      Namespace: AWS/ElastiCache
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 30
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ReplicationGroupId
+          Value: !Ref RedisReplicationGroup
+      AlarmActions:
+        - !Ref RedisNotificationTopic
+      TreatMissingData: notBreaching
+
+Outputs:
+  RedisReplicationGroupId:
+    Description: Redis Replication Group ID
+    Value: !Ref RedisReplicationGroup
+    Export:
+      Name: !Sub '${Environment}-redis-replication-group-id'
+
+  RedisPrimaryEndpoint:
+    Description: Redis Primary Endpoint Address
+    Value: !GetAtt RedisReplicationGroup.PrimaryEndPoint.Address
+    Export:
+      Name: !Sub '${Environment}-redis-primary-endpoint'
+
+  RedisPrimaryPort:
+    Description: Redis Primary Endpoint Port
+    Value: !GetAtt RedisReplicationGroup.PrimaryEndPoint.Port
+    Export:
+      Name: !Sub '${Environment}-redis-primary-port'
+
+  RedisReaderEndpoint:
+    Description: Redis Reader Endpoint Address
+    Value: !GetAtt RedisReplicationGroup.ReaderEndPoint.Address
+    Export:
+      Name: !Sub '${Environment}-redis-reader-endpoint'
+
+  RedisReaderPort:
+    Description: Redis Reader Endpoint Port
+    Value: !GetAtt RedisReplicationGroup.ReaderEndPoint.Port
+    Export:
+      Name: !Sub '${Environment}-redis-reader-port'
+
+  RedisAuthSecretArn:
+    Description: Redis Auth Token Secret ARN
+    Value: !Ref RedisAuthSecret
+    Export:
+      Name: !Sub '${Environment}-redis-auth-secret-arn'

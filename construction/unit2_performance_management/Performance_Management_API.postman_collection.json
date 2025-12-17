@@ -1,0 +1,636 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789abc",
+		"name": "Performance Management API",
+		"description": "Complete API collection for Performance Management Service - Unit 2\n\nBase URL: http://localhost:8081/api/v1/performance-management\n\nFeatures:\n- Feedback Management (US-019, US-020)\n- Self-Assessment (US-016)\n- Manager Assessment (US-017)\n- Review Cycles\n\nAll IDs must be in UUID format!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Feedback Management",
+			"item": [
+				{
+					"name": "1.1 Provide Positive Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"feedbackId\", jsonData.feedbackId);",
+									"    console.log(\"✅ Feedback ID saved: \" + jsonData.feedbackId);",
+									"    pm.test(\"Feedback created successfully\", function () {",
+									"        pm.response.to.have.status(201);",
+									"    });",
+									"    pm.test(\"Response has feedbackId\", function () {",
+									"        pm.expect(jsonData.feedbackId).to.exist;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{aliceId}}",
+								"description": "Alice giving feedback"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"receiverId\": \"{{bobId}}\",\n  \"kpiId\": \"{{kpiCodeQuality}}\",\n  \"kpiName\": \"Code Quality\",\n  \"feedbackType\": \"POSITIVE\",\n  \"contentText\": \"Excellent code reviews! Your attention to detail caught several bugs before production.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback"
+							]
+						},
+						"description": "Alice provides positive feedback to Bob about code quality (US-019)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 Provide Constructive Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.environment.set(\"feedbackId2\", jsonData.feedbackId);",
+									"    console.log(\"✅ Feedback ID 2 saved: \" + jsonData.feedbackId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{managerId}}",
+								"description": "Manager giving feedback"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"receiverId\": \"{{bobId}}\",\n  \"kpiId\": \"{{kpiCommunication}}\",\n  \"kpiName\": \"Team Communication\",\n  \"feedbackType\": \"CONSTRUCTIVE\",\n  \"contentText\": \"Good progress on documentation. Consider adding more examples in your technical specs to help new team members.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback"
+							]
+						},
+						"description": "Manager provides constructive feedback to Bob about communication (US-019)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Provide Developmental Feedback",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{managerId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"receiverId\": \"{{charlieId}}\",\n  \"kpiId\": \"{{kpiInnovation}}\",\n  \"kpiName\": \"Innovation\",\n  \"feedbackType\": \"DEVELOPMENTAL\",\n  \"contentText\": \"Great potential in proposing new solutions. Let's work together on developing your technical leadership skills.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback"
+							]
+						},
+						"description": "Manager provides developmental feedback to Charlie (US-019)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 Get Employee Feedback (Bob)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has feedback array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.feedback).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/employee/{{bobId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"employee",
+								"{{bobId}}"
+							]
+						},
+						"description": "Get all feedback for Bob (US-020)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 Get Specific Feedback Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/{{feedbackId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"{{feedbackId}}"
+							]
+						},
+						"description": "Get details of a specific feedback by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 Acknowledge Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Feedback acknowledged\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"ACKNOWLEDGED\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/{{feedbackId}}/acknowledge",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"{{feedbackId}}",
+								"acknowledge"
+							]
+						},
+						"description": "Bob acknowledges the feedback (US-020)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.7 Respond to Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Response submitted\", function () {",
+									"    pm.response.to.have.status(201);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"RESPONDED\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{bobId}}",
+								"description": "Bob responding to feedback"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"responseText\": \"Thank you Alice! I appreciate the feedback. I'll continue focusing on thorough code reviews and maintaining high quality standards.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/feedback/{{feedbackId}}/responses",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"{{feedbackId}}",
+								"responses"
+							]
+						},
+						"description": "Bob responds to the feedback (US-020)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.8 Resolve Feedback",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Feedback resolved\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"RESOLVED\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/{{feedbackId}}/resolve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"{{feedbackId}}",
+								"resolve"
+							]
+						},
+						"description": "Mark feedback as resolved"
+					},
+					"response": []
+				},
+				{
+					"name": "1.9 Get Unresolved Feedback",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/feedback/employee/{{bobId}}/unresolved",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"feedback",
+								"employee",
+								"{{bobId}}",
+								"unresolved"
+							]
+						},
+						"description": "Get only unresolved feedback for Bob"
+					},
+					"response": []
+				}
+			],
+			"description": "Feedback management endpoints (US-019, US-020)"
+		},
+		{
+			"name": "2. Review Cycles",
+			"item": [
+				{
+					"name": "2.1 Get All Review Cycles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cycles",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles"
+							]
+						},
+						"description": "Get all review cycles"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Get Specific Review Cycle",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}"
+							]
+						},
+						"description": "Get details of a specific review cycle"
+					},
+					"response": []
+				}
+			],
+			"description": "Review cycle management endpoints"
+		},
+		{
+			"name": "3. Self-Assessment (US-016)",
+			"item": [
+				{
+					"name": "3.1 Submit Self-Assessment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"kpiScores\": [\n    {\n      \"kpiId\": \"{{kpiCodeQuality}}\",\n      \"ratingValue\": 4,\n      \"achievementPercentage\": 90.0,\n      \"comment\": \"Delivered high-quality code with minimal bugs\"\n    },\n    {\n      \"kpiId\": \"{{kpiCommunication}}\",\n      \"ratingValue\": 5,\n      \"achievementPercentage\": 95.0,\n      \"comment\": \"Improved team collaboration through better documentation\"\n    }\n  ],\n  \"comments\": \"Strong quarter with focus on code quality and team collaboration\",\n  \"extraMileEfforts\": \"Mentored 2 junior developers, improved CI/CD pipeline\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}/participants/{{bobId}}/self-assessment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}",
+								"participants",
+								"{{bobId}}",
+								"self-assessment"
+							]
+						},
+						"description": "Bob submits self-assessment (US-016)\n\nNote: Requires a valid cycleId. This will return 404 if no cycle exists."
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Get Self-Assessment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}/participants/{{bobId}}/self-assessment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}",
+								"participants",
+								"{{bobId}}",
+								"self-assessment"
+							]
+						},
+						"description": "Get Bob's self-assessment details"
+					},
+					"response": []
+				}
+			],
+			"description": "Self-assessment endpoints (US-016)"
+		},
+		{
+			"name": "4. Manager Assessment (US-017)",
+			"item": [
+				{
+					"name": "4.1 Submit Manager Assessment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"kpiScores\": [\n    {\n      \"kpiId\": \"{{kpiCodeQuality}}\",\n      \"ratingValue\": 4,\n      \"achievementPercentage\": 88.0,\n      \"comment\": \"Consistently delivers quality code\"\n    },\n    {\n      \"kpiId\": \"{{kpiCommunication}}\",\n      \"ratingValue\": 5,\n      \"achievementPercentage\": 92.0,\n      \"comment\": \"Excellent communicator and team player\"\n    }\n  ],\n  \"overallComments\": \"Strong performer with excellent technical and soft skills. Ready for more leadership responsibilities.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}/participants/{{bobId}}/manager-assessment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}",
+								"participants",
+								"{{bobId}}",
+								"manager-assessment"
+							]
+						},
+						"description": "Manager submits assessment for Bob (US-017)\n\nNote: Requires self-assessment to be submitted first."
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Get Manager Assessment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}/participants/{{bobId}}/manager-assessment",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}",
+								"participants",
+								"{{bobId}}",
+								"manager-assessment"
+							]
+						},
+						"description": "Get manager's assessment for Bob"
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Get Assessment Comparison",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/cycles/{{cycleId}}/participants/{{bobId}}/comparison",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"cycles",
+								"{{cycleId}}",
+								"participants",
+								"{{bobId}}",
+								"comparison"
+							]
+						},
+						"description": "Compare self-assessment vs manager assessment"
+					},
+					"response": []
+				}
+			],
+			"description": "Manager assessment endpoints (US-017)"
+		},
+		{
+			"name": "5. Health Check",
+			"item": [
+				{
+					"name": "5.1 API Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8081/actuator/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8081",
+							"path": [
+								"actuator",
+								"health"
+							]
+						},
+						"description": "Check if the API is running"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8081/api/v1/performance-management",
+			"type": "string"
+		},
+		{
+			"key": "aliceId",
+			"value": "550e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		},
+		{
+			"key": "bobId",
+			"value": "550e8400-e29b-41d4-a716-446655440001",
+			"type": "string"
+		},
+		{
+			"key": "charlieId",
+			"value": "550e8400-e29b-41d4-a716-446655440002",
+			"type": "string"
+		},
+		{
+			"key": "managerId",
+			"value": "660e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		},
+		{
+			"key": "kpiCodeQuality",
+			"value": "770e8400-e29b-41d4-a716-446655440000",
+			"type": "string"
+		},
+		{
+			"key": "kpiCommunication",
+			"value": "770e8400-e29b-41d4-a716-446655440001",
+			"type": "string"
+		},
+		{
+			"key": "kpiTeamwork",
+			"value": "770e8400-e29b-41d4-a716-446655440002",
+			"type": "string"
+		},
+		{
+			"key": "kpiInnovation",
+			"value": "770e8400-e29b-41d4-a716-446655440003",
+			"type": "string"
+		},
+		{
+			"key": "feedbackId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "feedbackId2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cycleId",
+			"value": "cycle-2024-q4",
+			"type": "string"
+		}
+	]
+}

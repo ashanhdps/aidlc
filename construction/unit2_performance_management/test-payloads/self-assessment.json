@@ -1,0 +1,24 @@
+{
+  "kpiScores": [
+    {
+      "kpiId": "kpi-code-quality",
+      "ratingValue": 4,
+      "achievementPercentage": 90.0,
+      "comment": "Delivered high-quality code with minimal bugs throughout the quarter"
+    },
+    {
+      "kpiId": "kpi-communication",
+      "ratingValue": 5,
+      "achievementPercentage": 95.0,
+      "comment": "Improved team collaboration through better documentation and knowledge sharing"
+    },
+    {
+      "kpiId": "kpi-teamwork",
+      "ratingValue": 4,
+      "achievementPercentage": 88.0,
+      "comment": "Actively participated in code reviews and helped onboard new team members"
+    }
+  ],
+  "comments": "Strong quarter with focus on code quality and team collaboration. Successfully delivered 3 major features on time.",
+  "extraMileEfforts": "Mentored 2 junior developers, improved CI/CD pipeline reducing deployment time by 30%, organized weekly tech talks"
+}

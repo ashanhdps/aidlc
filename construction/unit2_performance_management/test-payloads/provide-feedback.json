@@ -1,0 +1,7 @@
+{
+  "receiverId": "550e8400-e29b-41d4-a716-446655440001",
+  "kpiId": "kpi-code-quality",
+  "kpiName": "Code Quality",
+  "feedbackType": "POSITIVE",
+  "contentText": "Excellent code reviews! Your attention to detail caught several bugs before production."
+}

@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Fargate cluster for Performance Management Service'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub '${Environment}-performance-mgmt-cluster'
+      CapacityProviders:
+        - FARGATE
+        - FARGATE_SPOT
+      DefaultCapacityProviderStrategy:
+        - CapacityProvider: FARGATE
+          Weight: 1
+          Base: 2
+        - CapacityProvider: FARGATE_SPOT
+          Weight: 4
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: DEFAULT
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-performance-mgmt-cluster'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: performance-management
+
+  # CloudWatch Log Group for ECS
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/ecs/${Environment}-performance-mgmt'
+      RetentionInDays: 30
+
+  # Service Discovery Namespace
+  ServiceDiscoveryNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: !Sub '${Environment}.performance-mgmt.local'
+      Vpc: !ImportValue
+        Fn::Sub: '${Environment}-performance-mgmt-vpc-id'
+      Description: !Sub 'Service discovery namespace for ${Environment} Performance Management'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Environment}-performance-mgmt-namespace'
+        - Key: Environment
+          Value: !Ref Environment
+
+  # CloudWatch Dashboard for ECS
+  ECSClusterDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub '${Environment}-PerformanceMgmt-ECS'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ECS", "CPUUtilization", {"stat": "Average"}],
+                  [".", "MemoryUtilization", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Cluster Resource Utilization",
+                "yAxis": {
+                  "left": {
+                    "min": 0,
+                    "max": 100
+                  }
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/ECS", "ServiceCount", {"stat": "Average"}],
+                  [".", "TaskCount", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Services and Tasks"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  ECSClusterName:
+    Description: ECS Cluster Name
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub '${Environment}-ecs-cluster-name'
+
+  ECSClusterArn:
+    Description: ECS Cluster ARN
+    Value: !GetAtt ECSCluster.Arn
+    Export:
+      Name: !Sub '${Environment}-ecs-cluster-arn'
+
+  ECSLogGroupName:
+    Description: ECS Log Group Name
+    Value: !Ref ECSLogGroup
+    Export:
+      Name: !Sub '${Environment}-ecs-log-group-name'
+
+  ServiceDiscoveryNamespaceId:
+    Description: Service Discovery Namespace ID
+    Value: !GetAtt ServiceDiscoveryNamespace.Id
+    Export:
+      Name: !Sub '${Environment}-service-discovery-namespace-id'
+
+  ServiceDiscoveryNamespaceName:
+    Description: Service Discovery Namespace Name
+    Value: !Sub '${Environment}.performance-mgmt.local'
+    Export:
+      Name: !Sub '${Environment}-service-discovery-namespace-name'
