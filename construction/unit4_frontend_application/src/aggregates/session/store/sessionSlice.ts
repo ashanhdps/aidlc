@@ -78,22 +78,48 @@ export const sessionSlice = createSlice({
       state.loading.error = action.payload
       state.loading.isLoading = false
     },
-    login: (state, action: PayloadAction<{ user: UserProfile; token: string; refreshToken: string; expiresAt: string }>) => {
+    loginWithJWT: (state, action: PayloadAction<{ 
+      token: string
+      username: string
+      role: string
+      userId: string
+      expiresIn: number
+    }>) => {
+      const { token, username, role, userId, expiresIn } = action.payload
+      const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString()
+      
+      // Create user profile from JWT data
+      const user: UserProfile = {
+        id: userId,
+        username: username,
+        email: `${username}@company.com`, // Fallback email
+        firstName: username,
+        lastName: '',
+        role: {
+          id: role.toLowerCase(),
+          name: role.toLowerCase(),
+          displayName: role,
+          permissions: [],
+        },
+        permissions: [],
+        isActive: true,
+        lastLogin: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
       state.authentication = {
         isAuthenticated: true,
-        token: action.payload.token,
-        refreshToken: action.payload.refreshToken,
-        expiresAt: action.payload.expiresAt,
-        user: action.payload.user,
+        token: token,
+        refreshToken: null,
+        expiresAt: expiresAt,
+        user: user,
       }
-      state.user = action.payload.user
+      state.user = user
       state.permissions = {
-        roles: [action.payload.user.role.name],
-        permissions: action.payload.user.permissions,
-        canAccess: action.payload.user.permissions.reduce((acc, perm) => {
-          acc[perm] = true
-          return acc
-        }, {} as Record<string, boolean>),
+        roles: [role.toLowerCase()],
+        permissions: [],
+        canAccess: {},
       }
     },
     logout: (state) => {
@@ -176,7 +202,7 @@ export const sessionSlice = createSlice({
 export const {
   setLoading,
   setError,
-  login,
+  loginWithJWT,
   logout,
   refreshToken,
   updatePreferences,

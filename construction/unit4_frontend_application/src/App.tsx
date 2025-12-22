@@ -19,6 +19,8 @@ import KPIAdminPage from './pages/KPIAdminPage'
 import KPIApprovalPage from './pages/KPIApprovalPage'
 import AssessmentPage from './pages/AssessmentPage'
 import FeedbackPage from './pages/FeedbackPage'
+import UserManagementPage from './pages/UserManagementPage'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 
 const theme = createTheme({
   palette: {
@@ -57,6 +59,11 @@ const AppContent: React.FC = () => {
           <Route path="/assessments" element={<AssessmentPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/connection-test" element={<ConnectionTest />} />
+          <Route path="/user-management" element={
+            <ProtectedRoute requiredRole="admin">
+              <UserManagementPage />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Container>

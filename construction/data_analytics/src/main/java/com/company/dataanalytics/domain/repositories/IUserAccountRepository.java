@@ -24,6 +24,11 @@ public interface IUserAccountRepository {
     Optional<UserAccount> findByEmail(Email email);
     
     /**
+     * Find user account by username
+     */
+    Optional<UserAccount> findByUsername(String username);
+    
+    /**
      * Find all users with a specific role
      */
     List<UserAccount> findByRole(RoleName roleName);

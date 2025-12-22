@@ -1,11 +1,11 @@
-server:
-  port: 8080
-  servlet:
-    context-path: /api/v1/data-analytics
-
 spring:
   application:
     name: data-analytics-service
+  
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}  # Default to local, override with environment variable
+  
+  # DynamoDB configuration handled by DynamoDBConfig
   
   datasource:
     url: jdbc:h2:mem:dataanalytics
@@ -27,6 +27,27 @@ spring:
       enabled: true
       path: /h2-console
 
+server:
+  port: 8088
+  servlet:
+    context-path: /api/v1/data-analytics
+
+# AWS Configuration
+aws:
+  region: us-east-1
+  dynamodb:
+    endpoint: http://localhost:5444  # For local DynamoDB
+    table-prefix: hr_usr
+
+# Application Configuration
+app:
+  database:
+    type: dynamodb  # Using DynamoDB only
+  demo:
+    initialize-data: ${INITIALIZE_DEMO_DATA:true}
+    admin-user: admin
+    use-local-dynamodb: ${USE_LOCAL_DYNAMODB:true}
+
 # JWT Configuration
 jwt:
   secret: mySecretKey123456789012345678901234567890
@@ -43,9 +64,10 @@ logging:
   level:
     com.company.dataanalytics: DEBUG
     org.springframework.security: DEBUG
+    software.amazon.awssdk: INFO
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{correlationId}] %logger{36} - %msg%n"
 
 # Management Endpoints
 management:
@@ -56,3 +78,11 @@ management:
   endpoint:
     health:
       show-details: always
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

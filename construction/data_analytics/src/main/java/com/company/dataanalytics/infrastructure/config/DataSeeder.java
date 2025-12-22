@@ -52,27 +52,27 @@ public class DataSeeder implements CommandLineRunner {
         logger.info("Seeding demo users...");
         
         // Create system admin user first
-        UserId adminId = userService.createUser("admin@company.com", "admin", "ADMIN", null);
+        UserId adminId = userService.createUser("admin@company.com", "admin", "ADMIN", null, null);
         logger.info("Created admin user: {}", adminId);
         
         // Create HR user
-        UserId hrId = userService.createUser("hr@company.com", "hr_manager", "HR", adminId);
+        UserId hrId = userService.createUser("hr@company.com", "hr_manager", "hr_manager","HR", adminId);
         userService.activateUser(hrId, adminId);
         logger.info("Created HR user: {}", hrId);
         
         // Create supervisor user
-        UserId supervisorId = userService.createUser("supervisor@company.com", "team_lead", "SUPERVISOR", adminId);
+        UserId supervisorId = userService.createUser("supervisor@company.com", "team_lead", "team_lead","SUPERVISOR", adminId);
         userService.activateUser(supervisorId, adminId);
         logger.info("Created supervisor user: {}", supervisorId);
         
         // Create employee users
-        UserId emp1Id = userService.createUser("john.doe@company.com", "john_doe", "EMPLOYEE", adminId);
+        UserId emp1Id = userService.createUser("john.doe@company.com", "john_doe", "password","EMPLOYEE", adminId);
         userService.activateUser(emp1Id, adminId);
         
-        UserId emp2Id = userService.createUser("jane.smith@company.com", "jane_smith", "EMPLOYEE", adminId);
+        UserId emp2Id = userService.createUser("jane.smith@company.com", "jane_smith", "password","EMPLOYEE", adminId);
         userService.activateUser(emp2Id, adminId);
         
-        UserId emp3Id = userService.createUser("bob.wilson@company.com", "bob_wilson", "EMPLOYEE", adminId);
+        UserId emp3Id = userService.createUser("bob.wilson@company.com", "bob_wilson","password", "EMPLOYEE", adminId);
         userService.activateUser(emp3Id, adminId);
         
         logger.info("Created {} demo users", 6);

@@ -33,7 +33,7 @@ public class UserApplicationService {
     /**
      * Create a new user account
      */
-    public UserId createUser(String email, String username, String roleName, UserId createdBy) {
+    public UserId createUser(String email, String username, String password, String roleName, UserId createdBy) {
         // Validate email uniqueness
         Email userEmail = Email.of(email);
         if (userRepository.existsByEmail(userEmail)) {
@@ -42,7 +42,7 @@ public class UserApplicationService {
         
         // Create user account through domain service
         RoleName role = RoleName.of(roleName);
-        UserAccount userAccount = userAdminService.createUserAccount(userEmail, username, role, createdBy);
+        UserAccount userAccount = userAdminService.createUserAccount(userEmail, username, password, role, createdBy);
         
         // Save user account
         userRepository.save(userAccount);
@@ -146,6 +146,14 @@ public class UserApplicationService {
     @Transactional(readOnly = true)
     public Optional<UserAccount> getUserByEmail(String email) {
         return userRepository.findByEmail(Email.of(email));
+    }
+    
+    /**
+     * Get user by username
+     */
+    @Transactional(readOnly = true)
+    public Optional<UserAccount> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
     
     /**

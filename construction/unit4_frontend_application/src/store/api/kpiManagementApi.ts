@@ -128,11 +128,8 @@ const getAuthHeaders = (getState: () => unknown) => {
   }
   
   if (auth?.isAuthenticated && auth.token) {
-    // Use the stored Basic Auth token (base64 encoded credentials)
-    headers['Authorization'] = `Basic ${auth.token}`
-  } else {
-    // Fallback to admin credentials for development
-    headers['Authorization'] = 'Basic YWRtaW46YWRtaW4xMjM='
+    // Use JWT Bearer token
+    headers['Authorization'] = `Bearer ${auth.token}`
   }
   
   return headers

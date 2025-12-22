@@ -31,7 +31,12 @@ public class InMemoryUserAccountRepository implements IUserAccountRepository {
         UserId userId = emailIndex.get(email);
         return userId != null ? findById(userId) : Optional.empty();
     }
-    
+
+    @Override
+    public Optional<UserAccount> findByUsername(String username) {
+        return Optional.empty();
+    }
+
     @Override
     public List<UserAccount> findByRole(RoleName roleName) {
         return users.values().stream()

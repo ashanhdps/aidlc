@@ -1,97 +1,40 @@
-import { useEffect, useState, ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
-import { Box, CircularProgress, Typography } from '@mui/material'
-import { useAppSelector, useAppDispatch } from '../../hooks/redux'
-import { initializeFromStorage } from '../../aggregates/session/store/sessionSlice'
-import { AuthenticationManager } from '../../aggregates/session/services/AuthenticationManager'
-import { UserPreferencesManager } from '../../aggregates/session/services/UserPreferencesManager'
+import React from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAppSelector } from '../../hooks/redux'
 
 interface ProtectedRouteProps {
-  children: ReactNode
-  requiredPermissions?: string[]
-  requiredRoles?: string[]
-  requireAll?: boolean
+  children: React.ReactNode
+  requiredRole?: string
+  allowedRoles?: string[]
+  redirectTo?: string
 }
 
-export const ProtectedRoute = ({
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
-  requiredPermissions = [],
-  requiredRoles = [],
-  requireAll = false,
-}: ProtectedRouteProps) => {
-  const dispatch = useAppDispatch()
-  const location = useLocation()
-  const { authentication, permissions, loading } = useAppSelector((state) => state.session)
-  const [isCheckingStorage, setIsCheckingStorage] = useState(true)
+  requiredRole,
+  allowedRoles,
+  redirectTo = '/dashboard'
+}) => {
+  const { user, authentication } = useAppSelector(state => state.session)
   
-  const authManager = new AuthenticationManager()
-  const preferencesManager = new UserPreferencesManager()
-
-  useEffect(() => {
-    // Initialize session from storage on first load
-    if (!authentication.isAuthenticated && !loading.isLoading) {
-      const storedAuth = authManager.getStoredAuthState()
-      const storedPreferences = preferencesManager.loadPreferences()
-      
-      if (storedAuth) {
-        dispatch(initializeFromStorage({
-          token: storedAuth.token,
-          user: storedAuth.user,
-          preferences: storedPreferences,
-        }))
-      }
-    }
-    // Mark storage check as complete
-    setIsCheckingStorage(false)
-  }, [dispatch, authentication.isAuthenticated, loading.isLoading])
-
-  // Show loading while checking authentication or storage
-  if (loading.isLoading || isCheckingStorage) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: 2,
-        }}
-      >
-        <CircularProgress size={40} />
-        <Typography variant="body2" color="text.secondary">
-          Loading...
-        </Typography>
-      </Box>
-    )
+  // Check if user is authenticated
+  if (!authentication?.isAuthenticated) {
+    return <Navigate to="/login" replace />
   }
 
-  // Redirect to login if not authenticated
-  if (!authentication.isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+  const userRole = user?.role?.name || 'employee'
+
+  // Check role-based access
+  let hasAccess = true
+
+  if (requiredRole) {
+    hasAccess = userRole === requiredRole
+  } else if (allowedRoles && allowedRoles.length > 0) {
+    hasAccess = allowedRoles.includes(userRole)
   }
 
-  // Check permissions if specified
-  if (requiredPermissions.length > 0 || requiredRoles.length > 0) {
-    const hasRequiredPermissions = requiredPermissions.length === 0 || (
-      requireAll
-        ? requiredPermissions.every(permission => permissions.permissions.includes(permission))
-        : requiredPermissions.some(permission => permissions.permissions.includes(permission))
-    )
-
-    const hasRequiredRoles = requiredRoles.length === 0 || (
-      requireAll
-        ? requiredRoles.every(role => permissions.roles.includes(role))
-        : requiredRoles.some(role => permissions.roles.includes(role))
-    )
-
-    const hasAccess = requiredPermissions.length > 0 && requiredRoles.length > 0
-      ? hasRequiredPermissions && hasRequiredRoles
-      : hasRequiredPermissions && hasRequiredRoles
-
-    if (!hasAccess) {
-      return <Navigate to="/unauthorized" replace />
-    }
+  if (!hasAccess) {
+    return <Navigate to={redirectTo} replace />
   }
 
   return <>{children}</>

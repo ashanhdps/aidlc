@@ -23,15 +23,15 @@ public class UserMapper {
         }
         
         return new UserResponse(
-            userAccount.getId().toString(),
+            userAccount.getId().getValue().toString(),
             userAccount.getEmail().getValue(),
             userAccount.getUsername(),
             userAccount.getRole().getRoleName().getValue(),
             userAccount.getAccountStatus().getValue(),
             userAccount.getCreatedDate(),
             userAccount.getLastLoginTime().hasNeverLoggedIn() ? null : userAccount.getLastLoginTime().getValue(),
-            userAccount.getCreatedBy() != null ? userAccount.getCreatedBy().toString() : null,
-            userAccount.getUpdatedBy() != null ? userAccount.getUpdatedBy().toString() : null,
+            userAccount.getCreatedBy() != null ? userAccount.getCreatedBy().getValue().toString() : null,
+            userAccount.getUpdatedBy() != null ? userAccount.getUpdatedBy().getValue().toString() : null,
             userAccount.getUpdatedDate()
         );
     }

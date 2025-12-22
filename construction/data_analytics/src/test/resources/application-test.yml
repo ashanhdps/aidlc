@@ -1,10 +1,8 @@
-server:
-  port: 0
-
 spring:
   application:
     name: data-analytics-service-test
   
+  # Use H2 for tests
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
@@ -17,19 +15,15 @@ spring:
       ddl-auto: create-drop
     show-sql: false
 
-# JWT Configuration
-jwt:
-  secret: testSecretKey123456789012345678901234567890
-  expiration: 86400000
+# Disable DynamoDB for tests
+app:
+  demo:
+    use-local-dynamodb: false
+    initialize-data: false
 
-# File Storage Configuration
-file:
-  storage:
-    reports-path: ./test-reports
-    max-file-size: 10MB
-
-# Logging Configuration
+# Logging for tests
 logging:
   level:
     com.company.dataanalytics: INFO
     org.springframework.security: WARN
+    software.amazon.awssdk: WARN

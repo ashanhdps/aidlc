@@ -40,9 +40,9 @@ export const UserProfile: React.FC = () => {
   }
 
   const handleLogout = () => {
-    // Clear stored authentication
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('user_profile')
+    // Clear stored JWT authentication
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('user_info')
     
     // Dispatch logout action
     dispatch(logout())

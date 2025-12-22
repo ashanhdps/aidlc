@@ -15,7 +15,8 @@ import {
   Assessment as AssessmentIcon,
   Feedback as FeedbackIcon,
   BugReport as TestIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  People as UsersIcon
 } from '@mui/icons-material'
 import { useAppSelector } from '../../hooks/redux'
 
@@ -86,6 +87,15 @@ export const Navigation: React.FC = () => {
       })
     }
 
+    // User Management - Admin only
+    if (roleName === 'admin') {
+      tabs.push({
+        icon: <UsersIcon />,
+        label: "User Management",
+        value: 10
+      })
+    }
+
     // Assessments and Feedback - available to all
     tabs.push({
       icon: <AssessmentIcon />,
@@ -122,7 +132,8 @@ export const Navigation: React.FC = () => {
       '/kpi-approval': 6,
       '/assessments': 7,
       '/feedback': 8,
-      '/connection-test': 9
+      '/connection-test': 9,
+      '/user-management': 10
     }
     
     const currentValue = routeToValue[location.pathname]
@@ -150,7 +161,8 @@ export const Navigation: React.FC = () => {
         6: '/kpi-approval',
         7: '/assessments',
         8: '/feedback',
-        9: '/connection-test'
+        9: '/connection-test',
+        10: '/user-management'
       }
       
       const route = routeMap[selectedTab.value]

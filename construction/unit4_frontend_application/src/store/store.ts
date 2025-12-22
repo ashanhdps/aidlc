@@ -8,6 +8,8 @@ import { sessionSlice } from '../aggregates/session/store/sessionSlice'
 import { kpiManagementApi } from './api/kpiManagementApi'
 import { performanceManagementApi } from './api/performanceManagementApi'
 import { dataAnalyticsApi } from './api/dataAnalyticsApi'
+import { userManagementApi } from './api/userManagementApi'
+import { authApi } from './api/authApi'
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +24,8 @@ export const store = configureStore({
     [kpiManagementApi.reducerPath]: kpiManagementApi.reducer,
     [performanceManagementApi.reducerPath]: performanceManagementApi.reducer,
     [dataAnalyticsApi.reducerPath]: dataAnalyticsApi.reducer,
+    [userManagementApi.reducerPath]: userManagementApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -31,7 +35,9 @@ export const store = configureStore({
     })
       .concat(kpiManagementApi.middleware)
       .concat(performanceManagementApi.middleware)
-      .concat(dataAnalyticsApi.middleware),
+      .concat(dataAnalyticsApi.middleware)
+      .concat(userManagementApi.middleware)
+      .concat(authApi.middleware),
   devTools: import.meta.env.MODE !== 'production',
 })
 

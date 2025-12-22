@@ -23,12 +23,12 @@ public class UserAdministrationService {
     /**
      * Create a new user account with proper validation
      */
-    public UserAccount createUserAccount(Email email, String username, RoleName roleName, UserId createdBy) {
+    public UserAccount createUserAccount(Email email, String username, String password, RoleName roleName, UserId createdBy) {
         // Create role with default permissions
         Role role = createRoleWithDefaultPermissions(roleName);
         
-        // Create user account
-        UserAccount userAccount = UserAccount.create(email, username, role, createdBy);
+        // Create user account with password
+        UserAccount userAccount = UserAccount.create(email, username, password, role, createdBy);
         
         // Publish domain events
         eventPublisher.publishAll(userAccount.getDomainEvents());
@@ -102,11 +102,11 @@ public class UserAdministrationService {
             case "ADMIN":
                 addAdminPermissions(role);
                 break;
-            case "HR":
-                addHRPermissions(role);
+            case "MANAGER":
+                addManagerPermissions(role);
                 break;
-            case "SUPERVISOR":
-                addSupervisorPermissions(role);
+            case "ANALYST":
+                addAnalystPermissions(role);
                 break;
             case "EMPLOYEE":
                 addEmployeePermissions(role);
@@ -119,8 +119,8 @@ public class UserAdministrationService {
     private String getDefaultRoleDescription(RoleName roleName) {
         return switch (roleName.getValue()) {
             case "ADMIN" -> "System administrator with full access";
-            case "HR" -> "Human resources personnel with user management access";
-            case "SUPERVISOR" -> "Team supervisor with team management access";
+            case "MANAGER" -> "Performance manager with team management access";
+            case "ANALYST" -> "Data analyst with analytics and reporting access";
             case "EMPLOYEE" -> "Regular employee with basic access";
             default -> "Standard user role";
         };
@@ -133,16 +133,17 @@ public class UserAdministrationService {
         role.addPermission(Permission.create("DATA_VIEW", "View all data", "DATA", "VIEW"));
     }
     
-    private void addHRPermissions(Role role) {
-        role.addPermission(Permission.create("USER_MANAGE", "Manage users", "USER", "MANAGE"));
-        role.addPermission(Permission.create("REPORT_GENERATE", "Generate reports", "REPORT", "GENERATE"));
-        role.addPermission(Permission.create("DATA_VIEW", "View performance data", "DATA", "VIEW"));
+    private void addManagerPermissions(Role role) {
+        role.addPermission(Permission.create("USER_MANAGE", "Manage team users", "USER", "MANAGE"));
+        role.addPermission(Permission.create("REPORT_GENERATE", "Generate performance reports", "REPORT", "GENERATE"));
+        role.addPermission(Permission.create("DATA_VIEW", "View team performance data", "DATA", "VIEW"));
+        role.addPermission(Permission.create("KPI_MANAGE", "Manage team KPIs", "KPI", "MANAGE"));
     }
     
-    private void addSupervisorPermissions(Role role) {
-        role.addPermission(Permission.create("TEAM_VIEW", "View team data", "TEAM", "VIEW"));
-        role.addPermission(Permission.create("REPORT_GENERATE", "Generate team reports", "REPORT", "GENERATE"));
-        role.addPermission(Permission.create("DATA_VIEW", "View team performance data", "DATA", "VIEW"));
+    private void addAnalystPermissions(Role role) {
+        role.addPermission(Permission.create("REPORT_GENERATE", "Generate analytics reports", "REPORT", "GENERATE"));
+        role.addPermission(Permission.create("DATA_VIEW", "View analytics data", "DATA", "VIEW"));
+        role.addPermission(Permission.create("ANALYTICS_ACCESS", "Access analytics dashboard", "ANALYTICS", "VIEW"));
     }
     
     private void addEmployeePermissions(Role role) {

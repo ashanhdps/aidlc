@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '../../hooks/redux'
-import { initializeFromStorage } from '../../aggregates/session/store/sessionSlice'
+import { loginWithJWT } from '../../aggregates/session/store/sessionSlice'
 import { LoginForm } from './LoginForm'
-import { UserProfile } from '../../types/domain'
 
 interface AuthGuardProps {
   children: React.ReactNode
@@ -13,44 +12,35 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { isAuthenticated, user } = useAppSelector(state => state.session.authentication)
 
   useEffect(() => {
-    // Check for stored authentication on app load
-    const storedToken = localStorage.getItem('auth_token')
-    const storedUser = localStorage.getItem('user_profile')
+    // Check for stored JWT token on app load
+    const storedToken = localStorage.getItem('jwt_token')
+    const storedUserInfo = localStorage.getItem('user_info')
 
-    if (storedToken && storedUser) {
+    if (storedToken && storedUserInfo) {
       try {
-        const userProfile: UserProfile = JSON.parse(storedUser)
-        dispatch(initializeFromStorage({
+        const userInfo = JSON.parse(storedUserInfo)
+        
+        // Restore authentication from stored JWT
+        dispatch(loginWithJWT({
           token: storedToken,
-          user: userProfile,
-          preferences: {
-            theme: 'light',
-            language: 'en',
-            timezone: 'UTC',
-            notifications: {
-              email: true,
-              push: true,
-              inApp: true,
-              frequency: 'immediate',
-            },
-            dashboard: {
-              defaultView: 'personal',
-              autoRefresh: true,
-              refreshInterval: 300000,
-            },
-          }
+          username: userInfo.username,
+          role: userInfo.role,
+          userId: userInfo.userId,
+          expiresIn: 86400 // Default 24 hours, will be validated by backend
         }))
       } catch (error) {
         console.error('Failed to restore authentication:', error)
         // Clear invalid stored data
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('user_profile')
+        localStorage.removeItem('jwt_token')
+        localStorage.removeItem('user_info')
       }
     }
   }, [dispatch])
 
   if (!isAuthenticated || !user) {
-    return <LoginForm />
+    return <LoginForm onSuccess={() => {
+      // Authentication successful, component will re-render
+    }} />
   }
 
   return <>{children}</>

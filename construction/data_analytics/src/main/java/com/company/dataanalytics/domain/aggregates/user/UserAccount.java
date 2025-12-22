@@ -1,14 +1,17 @@
 package com.company.dataanalytics.domain.aggregates.user;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.company.dataanalytics.domain.events.UserAccountCreated;
 import com.company.dataanalytics.domain.events.UserAccountDeactivated;
 import com.company.dataanalytics.domain.events.UserRoleChanged;
 import com.company.dataanalytics.domain.shared.AggregateRoot;
-import com.company.dataanalytics.domain.valueobjects.*;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import com.company.dataanalytics.domain.valueobjects.AccountStatus;
+import com.company.dataanalytics.domain.valueobjects.Email;
+import com.company.dataanalytics.domain.valueobjects.LastLoginTime;
+import com.company.dataanalytics.domain.valueobjects.UserId;
 
 /**
  * Aggregate root for user account management
@@ -17,6 +20,7 @@ public class UserAccount extends AggregateRoot<UserId> {
     
     private Email email;
     private String username;
+    private String passwordHash;
     private Role role;
     private AccountStatus accountStatus;
     private final Instant createdDate;
@@ -26,7 +30,7 @@ public class UserAccount extends AggregateRoot<UserId> {
     private Instant updatedDate;
     private final List<ActivityLog> activityLogs;
     
-    public UserAccount(UserId id, Email email, String username, Role role, UserId createdBy) {
+    public UserAccount(UserId id, Email email, String username, String passwordHash, Role role, UserId createdBy) {
         super(id);
         if (email == null) {
             throw new IllegalArgumentException("Email cannot be null");
@@ -34,12 +38,16 @@ public class UserAccount extends AggregateRoot<UserId> {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Username cannot be null or empty");
         }
+        if (passwordHash == null || passwordHash.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password hash cannot be null or empty");
+        }
         if (role == null) {
             throw new IllegalArgumentException("Role cannot be null");
         }
         
         this.email = email;
         this.username = username.trim();
+        this.passwordHash = passwordHash;
         this.role = role;
         this.accountStatus = AccountStatus.PENDING;
         this.createdDate = Instant.now();
@@ -51,8 +59,8 @@ public class UserAccount extends AggregateRoot<UserId> {
         addDomainEvent(new UserAccountCreated(id, email, role.getRoleName()));
     }
     
-    public static UserAccount create(Email email, String username, Role role, UserId createdBy) {
-        return new UserAccount(UserId.generate(), email, username, role, createdBy);
+    public static UserAccount create(Email email, String username, String passwordHash, Role role, UserId createdBy) {
+        return new UserAccount(UserId.generate(), email, username, passwordHash, role, createdBy);
     }
     
     public void activate(UserId updatedBy) {
@@ -114,6 +122,22 @@ public class UserAccount extends AggregateRoot<UserId> {
         logActivity("EMAIL_UPDATED");
     }
     
+    public void updatePassword(String newPasswordHash, UserId updatedBy) {
+        if (newPasswordHash == null || newPasswordHash.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password hash cannot be null or empty");
+        }
+        
+        this.passwordHash = newPasswordHash;
+        this.updatedBy = updatedBy;
+        this.updatedDate = Instant.now();
+        
+        logActivity("PASSWORD_UPDATED");
+    }
+    
+    public boolean verifyPassword(String providedPasswordHash) {
+        return this.passwordHash.equals(providedPasswordHash);
+    }
+    
     public void recordLogin() {
         this.lastLoginTime = LastLoginTime.now();
         logActivity("LOGIN");
@@ -145,6 +169,10 @@ public class UserAccount extends AggregateRoot<UserId> {
     
     public String getUsername() {
         return username;
+    }
+    
+    public String getPasswordHash() {
+        return passwordHash;
     }
     
     public Role getRole() {
