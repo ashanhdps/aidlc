@@ -26,8 +26,8 @@ export const DashboardContainer: React.FC<DashboardContainerProps> = ({
   const [isCustomizing, setIsCustomizing] = useState(false)
 
   // API queries
-  const { data: kpis, isLoading: kpisLoading, error: kpisError } = kpiManagementApi.useGetKPIsQuery(filters)
-  const { data: assignments, isLoading: assignmentsLoading } = kpiManagementApi.useGetAssignmentsQuery({ userId })
+  const { data: kpis, isLoading: kpisLoading, error: kpisError } = kpiManagementApi.useGetKPIDefinitionsQuery(filters)
+  const { data: assignments, isLoading: assignmentsLoading } = kpiManagementApi.useGetKPIAssignmentsQuery({ employeeId: userId })
   const { data: insights, isLoading: insightsLoading } = dataAnalyticsApi.useGetInsightsQuery({ userId })
 
   useEffect(() => {

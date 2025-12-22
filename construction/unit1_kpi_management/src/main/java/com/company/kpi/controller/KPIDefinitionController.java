@@ -35,6 +35,12 @@ public class KPIDefinitionController {
     @Autowired
     private KPIDefinitionService kpiDefinitionService;
     
+    // Add a simple test endpoint to verify controller is working
+    @GetMapping("/test")
+    public ResponseEntity<String> test() {
+        return ResponseEntity.ok("Controller is working");
+    }
+    
     @Operation(summary = "Create a new KPI Definition")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "KPI Definition created successfully"),

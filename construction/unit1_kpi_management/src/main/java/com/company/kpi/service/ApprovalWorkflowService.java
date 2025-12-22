@@ -1,7 +1,7 @@
 package com.company.kpi.service;
 
 import com.company.kpi.model.*;
-import com.company.kpi.repository.ApprovalWorkflowRepository;
+import com.company.kpi.repository.interfaces.ApprovalWorkflowRepositoryInterface;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +22,7 @@ public class ApprovalWorkflowService {
     private static final Logger logger = LoggerFactory.getLogger(ApprovalWorkflowService.class);
     
     @Autowired
-    private ApprovalWorkflowRepository approvalWorkflowRepository;
+    private ApprovalWorkflowRepositoryInterface approvalWorkflowRepository;
     
     @Autowired
     private ObjectMapper objectMapper;

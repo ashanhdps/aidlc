@@ -107,4 +107,10 @@ public class KPIDefinition {
     
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+    
+    // Department field for filtering (can be derived from other fields or set separately)
+    public String getDepartment() { 
+        // For now, return a default or derive from category
+        return category != null ? category.toString() : "GENERAL"; 
+    }
 }

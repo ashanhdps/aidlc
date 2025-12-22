@@ -21,8 +21,7 @@ import java.util.stream.Collectors;
 /**
  * DynamoDB repository for KPI Definition
  */
-@Repository
-@ConditionalOnProperty(name = "app.database.type", havingValue = "dynamodb", matchIfMissing = true)
+@Repository("kpiDefinitionRepositoryImpl")
 public class KPIDefinitionRepository implements KPIDefinitionRepositoryInterface {
     
     private final DynamoDbTable<KPIDefinition> table;
@@ -111,6 +110,22 @@ public class KPIDefinitionRepository implements KPIDefinitionRepositoryInterface
      */
     public long count() {
         return findAll().size();
+    }
+    
+    /**
+     * Checks if KPI Definition exists by ID
+     */
+    public boolean existsById(String id) {
+        return findById(id).isPresent();
+    }
+    
+    /**
+     * Finds KPI Definitions by department
+     */
+    public List<KPIDefinition> findByDepartment(String department) {
+        return findAll().stream()
+            .filter(kpi -> department.equals(kpi.getDepartment()))
+            .collect(Collectors.toList());
     }
     
     /**

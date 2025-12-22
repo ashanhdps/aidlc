@@ -2,7 +2,7 @@ package com.company.kpi.config;
 
 import com.company.kpi.model.*;
 import com.company.kpi.repository.interfaces.KPIDefinitionRepositoryInterface;
-import com.company.kpi.repository.KPIAssignmentRepository;
+import com.company.kpi.repository.interfaces.KPIAssignmentRepositoryInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +27,7 @@ public class DataInitializer implements CommandLineRunner {
     private KPIDefinitionRepositoryInterface kpiDefinitionRepository;
     
     @Autowired
-    private KPIAssignmentRepository kpiAssignmentRepository;
+    private KPIAssignmentRepositoryInterface kpiAssignmentRepository;
     
     @Value("${app.demo.initialize-data:true}")
     private boolean initializeData;

@@ -4,8 +4,8 @@ import com.company.kpi.model.AssignmentStatus;
 import com.company.kpi.model.KPIAssignment;
 import com.company.kpi.model.KPIDefinition;
 import com.company.kpi.model.dto.CreateKPIAssignmentRequest;
-import com.company.kpi.repository.KPIAssignmentRepository;
-import com.company.kpi.repository.KPIDefinitionRepository;
+import com.company.kpi.repository.interfaces.KPIAssignmentRepositoryInterface;
+import com.company.kpi.repository.interfaces.KPIDefinitionRepositoryInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +30,10 @@ public class KPIAssignmentService {
     private static final Logger logger = LoggerFactory.getLogger(KPIAssignmentService.class);
     
     @Autowired
-    private KPIAssignmentRepository kpiAssignmentRepository;
+    private KPIAssignmentRepositoryInterface kpiAssignmentRepository;
     
     @Autowired
-    private KPIDefinitionRepository kpiDefinitionRepository;
+    private KPIDefinitionRepositoryInterface kpiDefinitionRepository;
     
     @Value("${app.kpi.max-assignments-per-employee:10}")
     private int maxAssignmentsPerEmployee;

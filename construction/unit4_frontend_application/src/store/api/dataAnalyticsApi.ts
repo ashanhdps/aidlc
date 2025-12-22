@@ -7,11 +7,13 @@ const getToken = (state: RootState) => state.session.authentication.token
 export const dataAnalyticsApi = createApi({
   reducerPath: 'dataAnalyticsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/v1/data-analytics',
+    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
     prepareHeaders: (headers, { getState }) => {
-      const token = getToken(getState() as RootState)
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`)
+      const state = getState() as RootState
+      const auth = state.session?.authentication
+      
+      if (auth?.isAuthenticated && auth.token) {
+        headers.set('authorization', `Basic ${auth.token}`)
       }
       return headers
     },
@@ -19,12 +21,8 @@ export const dataAnalyticsApi = createApi({
   tagTypes: ['Performance', 'Insights', 'Reports', 'Integration'],
   endpoints: (builder) => ({
     getPerformanceData: builder.query<PerformanceData[], PerformanceFilters>({
-      query: (filters) => ({ 
-        url: '/performance/employee', 
-        params: filters 
-      }),
       providesTags: ['Performance'],
-      // Mock implementation
+      // Mock implementation only - no HTTP request
       queryFn: async (filters) => {
         await new Promise(resolve => setTimeout(resolve, 600))
         
@@ -58,11 +56,8 @@ export const dataAnalyticsApi = createApi({
     }),
     
     getInsights: builder.query<InsightData[], { userId: string }>({
-      query: ({ userId }) => ({ 
-        url: `/insights/${userId}` 
-      }),
       providesTags: ['Insights'],
-      // Mock implementation
+      // Mock implementation only - no HTTP request
       queryFn: async ({ userId }) => {
         await new Promise(resolve => setTimeout(resolve, 800))
         

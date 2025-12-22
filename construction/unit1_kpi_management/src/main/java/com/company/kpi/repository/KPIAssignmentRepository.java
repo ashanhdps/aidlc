@@ -2,7 +2,9 @@ package com.company.kpi.repository;
 
 import com.company.kpi.model.AssignmentStatus;
 import com.company.kpi.model.KPIAssignment;
+import com.company.kpi.repository.interfaces.KPIAssignmentRepositoryInterface;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -20,8 +22,8 @@ import java.util.stream.Collectors;
 /**
  * DynamoDB repository for KPI Assignment
  */
-@Repository
-public class KPIAssignmentRepository {
+@Repository("kpiAssignmentRepositoryImpl")
+public class KPIAssignmentRepository implements KPIAssignmentRepositoryInterface {
     
     private final DynamoDbTable<KPIAssignment> table;
     private final String tableName;
@@ -115,6 +117,44 @@ public class KPIAssignmentRepository {
      */
     public long count() {
         return findAll().size();
+    }
+    
+    /**
+     * Finds KPI Assignment by ID
+     */
+    public Optional<KPIAssignment> findById(String id) {
+        // For composite key, we'll need to parse the ID or use a different approach
+        // For now, let's scan and find by ID field
+        return findAll().stream()
+            .filter(assignment -> id.equals(assignment.getId()))
+            .findFirst();
+    }
+    
+    /**
+     * Finds KPI Assignments by status
+     */
+    public List<KPIAssignment> findByStatus(AssignmentStatus status) {
+        return findAll().stream()
+            .filter(assignment -> assignment.getStatus() == status)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Deletes KPI Assignment by ID
+     */
+    public void deleteById(String id) {
+        Optional<KPIAssignment> assignment = findById(id);
+        if (assignment.isPresent()) {
+            KPIAssignment kpiAssignment = assignment.get();
+            delete(kpiAssignment.getEmployeeId(), kpiAssignment.getKpiDefinitionId());
+        }
+    }
+    
+    /**
+     * Checks if KPI Assignment exists by ID
+     */
+    public boolean existsById(String id) {
+        return findById(id).isPresent();
     }
     
     /**

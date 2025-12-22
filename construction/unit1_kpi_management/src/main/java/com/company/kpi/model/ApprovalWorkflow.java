@@ -82,4 +82,16 @@ public class ApprovalWorkflow {
     
     public LocalDateTime getDueDate() { return dueDate; }
     public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+    
+    // Additional methods for interface compatibility
+    public String getId() { return workflowId; }
+    
+    public String getKpiAssignmentId() { 
+        // For KPI assignment workflows, entityId would be the assignment ID
+        return (requestType == ChangeRequestType.ASSIGNMENT_CREATE || 
+                requestType == ChangeRequestType.ASSIGNMENT_MODIFY || 
+                requestType == ChangeRequestType.ASSIGNMENT_REMOVE) ? entityId : null; 
+    }
+    
+    public String getApproverId() { return checkerId; } // Alias for checkerId
 }

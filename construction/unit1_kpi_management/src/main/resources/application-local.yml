@@ -1,18 +1,6 @@
-# Local development profile with SQLite
+# Local development profile with DynamoDB Local
 spring:
-  datasource:
-    url: jdbc:sqlite:kpi-management.db
-    driver-class-name: org.sqlite.JDBC
-    username: ""
-    password: ""
-  jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+  # DynamoDB Local configuration
   security:
     user:
       name: admin
@@ -22,11 +10,17 @@ spring:
 # Database Configuration
 app:
   database:
-    type: sqlite  # Options: sqlite, h2, dynamodb
+    type: dynamodb  # Using DynamoDB Local
   demo:
     initialize-data: true
-    use-local-dynamodb: false
+    use-local-dynamodb: true
     simulate-api-calls: true
+
+# AWS Configuration
+aws:
+  region: us-east-1
+  dynamodb:
+    endpoint: http://localhost:5444
 
 # Logging for development
 logging:

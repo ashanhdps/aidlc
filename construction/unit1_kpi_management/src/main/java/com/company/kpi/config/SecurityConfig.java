@@ -11,6 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Security configuration for basic authentication
@@ -19,9 +21,13 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
     
+    @Autowired
+    private CorsConfigurationSource corsConfigurationSource;
+    
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints
@@ -29,26 +35,26 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
                 
                 // KPI Definition endpoints - Makers can create/modify, all can view
-                .requestMatchers("GET", "/kpi-definitions/**").hasAnyAuthority("VIEW_ALL", "VIEW_TEAM", "VIEW_OWN")
-                .requestMatchers("POST", "/kpi-definitions").hasAuthority("CREATE_KPI")
-                .requestMatchers("PUT", "/kpi-definitions/**").hasAuthority("MODIFY_KPI")
-                .requestMatchers("DELETE", "/kpi-definitions/**").hasAuthority("MODIFY_KPI")
-                
+                .requestMatchers("GET", "/api/v1/kpi-management/kpis/**").hasAnyAuthority("VIEW_ALL", "VIEW_TEAM", "VIEW_OWN")
+                .requestMatchers("POST", "/api/v1/kpi-management/kpis").hasAuthority("CREATE_KPI")
+                .requestMatchers("PUT", "/api/v1/kpi-management/kpis/**").hasAuthority("MODIFY_KPI")
+                .requestMatchers("DELETE", "/api/v1/kpi-management/kpis/**").hasAuthority("MODIFY_KPI")
+
                 // KPI Assignment endpoints - Supervisors and managers can assign
-                .requestMatchers("GET", "/kpi-assignments/**").hasAnyAuthority("VIEW_ALL", "VIEW_TEAM")
-                .requestMatchers("POST", "/kpi-assignments").hasAuthority("ASSIGN_KPI")
-                .requestMatchers("PUT", "/kpi-assignments/**").hasAuthority("ASSIGN_KPI")
-                .requestMatchers("DELETE", "/kpi-assignments/**").hasAuthority("ASSIGN_KPI")
-                
+                .requestMatchers("GET", "/api/v1/kpi-management/assignments/**").hasAnyAuthority("VIEW_ALL", "VIEW_TEAM")
+                .requestMatchers("POST", "/api/v1/kpi-management/assignments").hasAuthority("ASSIGN_KPI")
+                .requestMatchers("PUT", "/api/v1/kpi-management/assignments/**").hasAuthority("ASSIGN_KPI")
+                .requestMatchers("DELETE", "/api/v1/kpi-management/assignments/**").hasAuthority("ASSIGN_KPI")
+
                 // Approval workflow endpoints - Checkers can approve, makers can view their requests
-                .requestMatchers("GET", "/approval-workflows/pending").hasAuthority("APPROVE_CHANGES")
-                .requestMatchers("GET", "/approval-workflows/my-requests").hasAnyAuthority("ROLE_MAKER", "ROLE_SUPERVISOR")
-                .requestMatchers("GET", "/approval-workflows/all").hasAuthority("VIEW_ALL")
-                .requestMatchers("POST", "/approval-workflows/*/approve").hasAuthority("APPROVE_CHANGES")
-                .requestMatchers("POST", "/approval-workflows/*/reject").hasAuthority("APPROVE_CHANGES")
+                .requestMatchers("GET", "/api/v1/kpi-management/approval-workflows/pending").hasAuthority("APPROVE_CHANGES")
+                .requestMatchers("GET", "/api/v1/kpi-management/approval-workflows/my-requests").hasAnyAuthority("ROLE_MAKER", "ROLE_SUPERVISOR")
+                .requestMatchers("GET", "/api/v1/kpi-management/approval-workflows/all").hasAuthority("VIEW_ALL")
+                .requestMatchers("POST", "/api/v1/kpi-management/approval-workflows/*/approve").hasAuthority("APPROVE_CHANGES")
+                .requestMatchers("POST", "/api/v1/kpi-management/approval-workflows/*/reject").hasAuthority("APPROVE_CHANGES")
                 
                 // KPI Data endpoints - All authenticated users can view data
-                .requestMatchers("/kpi-data/**").authenticated()
+                .requestMatchers("/api/v1/kpi-management/data/**").authenticated()
                 
                 .anyRequest().authenticated()
             )
@@ -80,7 +86,7 @@ public class SecurityConfig {
             .username("supervisor")
             .password(passwordEncoder().encode("supervisor123"))
             .roles("SUPERVISOR", "MAKER")
-            .authorities("ROLE_SUPERVISOR", "ROLE_MAKER", "CREATE_KPI", "MODIFY_KPI", "ASSIGN_KPI")
+            .authorities("ROLE_SUPERVISOR", "ROLE_MAKER", "CREATE_KPI", "MODIFY_KPI", "ASSIGN_KPI", "VIEW_TEAM")
             .build();
         
         // Manager - Can view and make some changes

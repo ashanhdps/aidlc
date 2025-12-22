@@ -1,0 +1,5 @@
+construction/unit1_kpi_management/test-demo-apis-local.bat
+construction/unit1_kpi_management/src/demo/dynamodb-local/*
+construction/unit1_kpi_management/target/*
+construction/unit1_kpi_management/*.bat
+*.bat

@@ -5,6 +5,8 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}  # Default to local, override with environment variable
   
+  # DynamoDB configuration handled by DynamoDBConfig
+  
   security:
     user:
       name: ${ADMIN_USERNAME:admin}
@@ -51,7 +53,7 @@ aws:
 # Application Configuration
 app:
   database:
-    type: ${DATABASE_TYPE:sqlite}  # Options: sqlite, h2, dynamodb
+    type: dynamodb  # Using DynamoDB only
   kpi:
     default-weight-validation: flexible
     max-assignments-per-employee: 10

@@ -96,4 +96,9 @@ public class KPIAssignment {
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    // Composite ID for interface compatibility
+    public String getId() { 
+        return assignmentId != null ? assignmentId : (employeeId + "#" + kpiDefinitionId); 
+    }
 }

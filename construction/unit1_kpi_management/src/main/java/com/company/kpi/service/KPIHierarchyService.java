@@ -3,7 +3,7 @@ package com.company.kpi.service;
 import com.company.kpi.model.KPIDefinition;
 import com.company.kpi.model.KPIHierarchy;
 import com.company.kpi.model.dto.KPIHierarchyResponse;
-import com.company.kpi.repository.KPIDefinitionRepository;
+import com.company.kpi.repository.interfaces.KPIDefinitionRepositoryInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ public class KPIHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(KPIHierarchyService.class);
     
     @Autowired
-    private KPIDefinitionRepository kpiDefinitionRepository;
+    private KPIDefinitionRepositoryInterface kpiDefinitionRepository;
     
     // In-memory storage for demo purposes
     private final List<KPIHierarchy> hierarchies = new ArrayList<>();

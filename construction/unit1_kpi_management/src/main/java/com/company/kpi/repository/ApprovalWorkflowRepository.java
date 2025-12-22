@@ -2,7 +2,9 @@ package com.company.kpi.repository;
 
 import com.company.kpi.model.ApprovalStatus;
 import com.company.kpi.model.ApprovalWorkflow;
+import com.company.kpi.repository.interfaces.ApprovalWorkflowRepositoryInterface;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -19,8 +21,8 @@ import java.util.stream.Collectors;
 /**
  * DynamoDB repository for Approval Workflow
  */
-@Repository
-public class ApprovalWorkflowRepository {
+@Repository("approvalWorkflowRepositoryImpl")
+public class ApprovalWorkflowRepository implements ApprovalWorkflowRepositoryInterface {
     
     private final DynamoDbTable<ApprovalWorkflow> table;
     private final String tableName;
@@ -102,6 +104,40 @@ public class ApprovalWorkflowRepository {
      */
     public long count() {
         return findAll().size();
+    }
+    
+    /**
+     * Finds workflows by KPI Assignment ID
+     */
+    public List<ApprovalWorkflow> findByKpiAssignmentId(String kpiAssignmentId) {
+        return findAll().stream()
+            .filter(workflow -> kpiAssignmentId.equals(workflow.getKpiAssignmentId()))
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Finds workflows by status
+     */
+    public List<ApprovalWorkflow> findByStatus(ApprovalStatus status) {
+        return findAll().stream()
+            .filter(workflow -> workflow.getStatus() == status)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Finds workflows by approver ID
+     */
+    public List<ApprovalWorkflow> findByApproverId(String approverId) {
+        return findAll().stream()
+            .filter(workflow -> approverId.equals(workflow.getApproverId()))
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * Checks if workflow exists by ID
+     */
+    public boolean existsById(String id) {
+        return findById(id).isPresent();
     }
     
     /**

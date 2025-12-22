@@ -15,7 +15,6 @@ import java.net.URI;
  * Configuration for AWS DynamoDB client
  */
 @Configuration
-@ConditionalOnProperty(name = "app.database.type", havingValue = "dynamodb", matchIfMissing = false)
 public class DynamoDBConfig {
     
     @Value("${aws.region:us-east-1}")
